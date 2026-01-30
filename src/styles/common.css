@@ -1,0 +1,27 @@
+.table {
+  width: 100%;
+  background: white;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.primary-btn {
+  background: #0f2a44;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  margin-right: 10px;
+  padding: 8px 14px;
+}
