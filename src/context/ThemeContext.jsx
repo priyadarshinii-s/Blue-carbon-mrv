@@ -1,28 +1,13 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext } from "react";
 
-const ThemeContext = createContext(null);
+const ThemeContext = createContext({ theme: "light", toggleTheme: () => { } });
 
-export const ThemeProvider = ({ children }) => {
-    const [theme, setTheme] = useState(() => localStorage.getItem("bcmrv_theme") || "light");
+export const ThemeProvider = ({ children }) => (
+    <ThemeContext.Provider value={{ theme: "light", toggleTheme: () => { } }}>
+        {children}
+    </ThemeContext.Provider>
+);
 
-    useEffect(() => {
-        document.documentElement.setAttribute("data-theme", theme);
-        localStorage.setItem("bcmrv_theme", theme);
-    }, [theme]);
-
-    const toggleTheme = () => setTheme((prev) => (prev === "light" ? "dark" : "light"));
-
-    return (
-        <ThemeContext.Provider value={{ theme, toggleTheme }}>
-            {children}
-        </ThemeContext.Provider>
-    );
-};
-
-export const useTheme = () => {
-    const ctx = useContext(ThemeContext);
-    if (!ctx) throw new Error("useTheme must be used inside ThemeProvider");
-    return ctx;
-};
+export const useTheme = () => useContext(ThemeContext);
 
 export default ThemeContext;

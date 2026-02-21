@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import StatusBadge from "../../components/shared/StatusBadge";
 
 const allProjects = [
@@ -11,6 +12,7 @@ const allProjects = [
 ];
 
 const MyProjects = () => {
+    const navigate = useNavigate();
     const [typeFilter, setTypeFilter] = useState("ALL");
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [detail, setDetail] = useState(null);
@@ -23,8 +25,50 @@ const MyProjects = () => {
 
     return (
         <>
-            <h1>Blue Carbon Projects</h1>
-            <p className="page-subtitle">All publicly registered projects on the MRV Registry</p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <div>
+                    <h1>My Projects</h1>
+                    <p className="page-subtitle">All your registered blue carbon projects</p>
+                </div>
+                <button
+                    className="primary-btn"
+                    style={{ padding: "12px 24px", fontSize: "15px", background: "#0f766e" }}
+                    onClick={() => navigate("/user/project/new")}
+                >
+                    + Register New Project
+                </button>
+            </div>
+
+            <div
+                onClick={() => navigate("/user/project/new")}
+                style={{
+                    background: "linear-gradient(135deg, #0f2a44 0%, #0f766e 100%)",
+                    borderRadius: "12px", padding: "24px 28px", marginBottom: "24px",
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    cursor: "pointer", color: "white",
+                    boxShadow: "0 4px 24px rgba(15,118,110,0.25)",
+                    transition: "transform 0.18s, box-shadow 0.18s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(15,118,110,0.35)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(15,118,110,0.25)"; }}
+            >
+                <div>
+                    <div style={{ fontSize: "20px", fontWeight: 800, marginBottom: "6px" }}>
+                        Register a New Blue Carbon Project
+                    </div>
+                    <div style={{ fontSize: "14px", opacity: 0.85, maxWidth: "480px" }}>
+                        Submit your project to the MRV registry. Upload baseline evidence, define your geofence, and create an immutable on-chain record.
+                    </div>
+                    <div style={{
+                        display: "inline-block", marginTop: "14px",
+                        background: "rgba(255,255,255,0.2)", borderRadius: "6px",
+                        padding: "8px 20px", fontSize: "14px", fontWeight: 600,
+                    }}>
+                        + Get Started
+                    </div>
+                </div>
+                <div style={{ fontSize: "72px", opacity: 0.6, flexShrink: 0 }}>🌿</div>
+            </div>
 
             <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap" }}>
                 <div>
@@ -100,6 +144,25 @@ const MyProjects = () => {
                     </div>
                 </div>
             )}
+
+            <button
+                onClick={() => navigate("/user/project/new")}
+                style={{
+                    position: "fixed", bottom: "28px", right: "28px",
+                    width: "56px", height: "56px", borderRadius: "50%",
+                    background: "linear-gradient(135deg, #0f766e, #047857)",
+                    color: "white", border: "none", fontSize: "28px",
+                    cursor: "pointer", boxShadow: "0 4px 20px rgba(15,118,110,0.5)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transition: "transform 0.15s, box-shadow 0.15s",
+                    zIndex: 100,
+                }}
+                title="Register New Project"
+                onMouseEnter={(e) => { e.currentTarget.style.transform = "scale(1.1)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+            >
+                +
+            </button>
         </>
     );
 };

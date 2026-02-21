@@ -69,7 +69,7 @@ const NewSubmission = () => {
 
   const captureGPS = () => {
     setGpsLoading(true);
-    // Mock GPS capture
+
     setTimeout(() => {
       setForm((prev) => ({ ...prev, gpsLat: "11.1271", gpsLng: "78.6569" }));
       setGpsLoading(false);
@@ -106,7 +106,7 @@ const NewSubmission = () => {
       <p className="page-subtitle">Submit verified plantation data for MRV review</p>
 
       <div className="card form-card wide mt-20">
-        {/* Project Selection */}
+
         <div className="form-group">
           <label>Project *</label>
           <select name="projectId" value={form.projectId} onChange={handleChange}>
@@ -119,13 +119,13 @@ const NewSubmission = () => {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-          {/* Date of Visit */}
+
           <div className="form-group">
             <label>Date of Visit</label>
             <input type="date" name="dateOfVisit" value={form.dateOfVisit} onChange={handleChange} />
           </div>
 
-          {/* Tree Count */}
+
           <div className="form-group">
             <label>Number of Surviving Saplings/Trees *</label>
             <input type="number" name="treeCount" placeholder="Enter count" value={form.treeCount} onChange={handleChange} min="0" />
@@ -133,7 +133,7 @@ const NewSubmission = () => {
           </div>
         </div>
 
-        {/* GPS Location */}
+
         <div className="form-group">
           <label>GPS Location *</label>
           <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
@@ -147,7 +147,7 @@ const NewSubmission = () => {
           <small className="helper-text">Auto-captured from field device or enter manually</small>
         </div>
 
-        {/* Map */}
+
         <div className="form-group">
           <MapComponent
             pins={form.gpsLat ? [{ lat: parseFloat(form.gpsLat), lng: parseFloat(form.gpsLng) }] : []}
@@ -155,19 +155,19 @@ const NewSubmission = () => {
           />
         </div>
 
-        {/* Survival Rate */}
+
         <div className="form-group">
           <label>Survival Rate (%)</label>
           <input type="number" name="survivalRate" placeholder="e.g. 85" min="0" max="100" value={form.survivalRate} onChange={handleChange} />
         </div>
 
-        {/* Photo Evidence */}
+
         <div className="form-group">
           <PhotoUploader maxFiles={5} label="Photo Evidence (min 3 required)" onFilesChange={setPhotos} />
           {errors.photos && <small style={{ color: "#b91c1c" }}>{errors.photos}</small>}
         </div>
 
-        {/* Site Condition */}
+
         <div className="form-group">
           <label style={{ fontSize: "15px", fontWeight: 600, marginBottom: "12px" }}>Site Condition Assessment</label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
@@ -201,7 +201,7 @@ const NewSubmission = () => {
           </div>
         </div>
 
-        {/* Restoration Activities */}
+
         <div className="form-group">
           <label>Restoration Activities Completed</label>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "4px" }}>
@@ -219,19 +219,19 @@ const NewSubmission = () => {
           </div>
         </div>
 
-        {/* Carbon Sampling Notes */}
+
         <div className="form-group">
           <label>Carbon Sampling Notes</label>
           <textarea name="carbonSamplingNotes" placeholder="Notes about soil carbon samples, methodology, measurements..." value={form.carbonSamplingNotes} onChange={handleChange} />
         </div>
 
-        {/* Field Notes */}
+
         <div className="form-group">
           <label>Additional Field Notes</label>
           <textarea name="fieldNotes" placeholder="Optional observations, weather conditions, wildlife sightings..." value={form.fieldNotes} onChange={handleChange} />
         </div>
 
-        {/* Actions */}
+
         <div className="form-actions" style={{ display: "flex", gap: "10px" }}>
           <button className="primary-btn" onClick={handleSubmit} style={{ padding: "12px 24px" }}>
             Submit for Verification

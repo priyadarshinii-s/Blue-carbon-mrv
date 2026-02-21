@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useTheme } from "../../context/ThemeContext";
 import NotificationBell from "./NotificationBell";
 import WalletModal from "./WalletModal";
 
@@ -20,7 +19,6 @@ const roleColors = {
 
 const TopNavbar = () => {
   const { role, user, walletAddress, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [showProfile, setShowProfile] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -57,7 +55,7 @@ const TopNavbar = () => {
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          {/* Wallet Address */}
+
           <div
             style={{
               display: "flex", alignItems: "center", gap: "6px",
@@ -72,22 +70,11 @@ const TopNavbar = () => {
             {copied && <span style={{ color: "#0f766e", fontSize: "11px" }}>Copied!</span>}
           </div>
 
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              fontSize: "18px", padding: "4px",
-            }}
-            title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
-          >
-            {theme === "light" ? "🌙" : "☀️"}
-          </button>
 
-          {/* Notification Bell */}
+
           <NotificationBell />
 
-          {/* Profile Dropdown */}
+
           <div style={{ position: "relative" }}>
             <button
               onClick={() => setShowProfile(!showProfile)}
@@ -130,7 +117,7 @@ const TopNavbar = () => {
                   style={{
                     width: "100%", padding: "10px 16px", background: "none",
                     border: "none", textAlign: "left", cursor: "pointer",
-                    fontSize: "13px", color: "#b91c1c",
+                    fontSize: "13px", color: "#b91c1c", letterSpacing: "0.4px"
                   }}
                 >
                   🚪 Logout

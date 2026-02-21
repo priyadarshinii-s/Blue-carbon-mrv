@@ -109,7 +109,7 @@ const ProjectManagement = () => {
         </div>
       )}
 
-      {/* Project Detail Modal */}
+
       {selectedProject && (
         <div className="modal-overlay" onClick={() => setSelectedProject(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "700px", width: "90%" }}>
@@ -118,7 +118,7 @@ const ProjectManagement = () => {
               <button onClick={() => setSelectedProject(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }}>×</button>
             </div>
 
-            {/* Tabs */}
+
             <div style={{ display: "flex", gap: "0", borderBottom: "2px solid #e5e7eb", marginBottom: "16px" }}>
               {["metadata", "submissions", "history", "tokens"].map((tab) => (
                 <button

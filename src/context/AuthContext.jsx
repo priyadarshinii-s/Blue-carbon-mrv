@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [walletAddress, setWalletAddress] = useState(null);
 
-  // Restore from localStorage on mount
+
   useEffect(() => {
     const storedUser = localStorage.getItem("bcmrv_user");
     if (storedUser) {
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const connectWallet = () => {
-    // Mock MetaMask connection
+
     const mockAddr = "0x7a3B" + Math.random().toString(16).slice(2, 38).toUpperCase();
     setWalletAddress(mockAddr);
     if (user) {

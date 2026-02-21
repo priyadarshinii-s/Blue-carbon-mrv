@@ -48,7 +48,7 @@ const SubmissionHistory = () => {
       <h1>Submission History</h1>
       <p className="page-subtitle">Track all your field data submissions and their review status</p>
 
-      {/* Filter */}
+
       <div style={{ marginBottom: "16px" }}>
         <label style={{ fontSize: "13px", marginRight: "8px" }}>Status:</label>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={{ width: "auto", padding: "6px 10px" }}>
@@ -95,7 +95,7 @@ const SubmissionHistory = () => {
         </tbody>
       </table>
 
-      {/* Detail Modal */}
+
       {selectedSubmission && (
         <div className="modal-overlay" onClick={() => setSelectedSubmission(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "600px" }}>

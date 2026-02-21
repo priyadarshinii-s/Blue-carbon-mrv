@@ -42,7 +42,7 @@ const Reports = () => {
       <h1>Reports & Exports</h1>
       <p className="page-subtitle">Generate and export compliance reports</p>
 
-      {/* Report Type Selector */}
+
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
         {[
           { key: "ledger", label: "Credit Ledger" },
@@ -60,7 +60,7 @@ const Reports = () => {
         ))}
       </div>
 
-      {/* Filters */}
+
       <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
         <div>
           <label style={{ fontSize: "12px", marginRight: "4px" }}>From:</label>
@@ -94,7 +94,7 @@ const Reports = () => {
         <ExportButtons />
       </div>
 
-      {/* Credit Ledger */}
+
       {activeReport === "ledger" && (
         <div>
           <div className="card" style={{ display: "inline-block", marginBottom: "16px" }}>
@@ -127,7 +127,7 @@ const Reports = () => {
         </div>
       )}
 
-      {/* NDC Compliance */}
+
       {activeReport === "ndc" && (
         <div>
           <div className="card">
@@ -169,7 +169,7 @@ const Reports = () => {
         </div>
       )}
 
-      {/* Officer Performance */}
+
       {activeReport === "performance" && (
         <table className="table">
           <thead>

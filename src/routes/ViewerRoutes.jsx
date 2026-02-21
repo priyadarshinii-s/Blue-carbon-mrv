@@ -4,6 +4,7 @@ import ProtectedRoute from "../components/common/ProtectedRoute";
 import UserDashboard from "../pages/user/UserDashboard";
 import MyProjects from "../pages/user/MyProjects";
 import CreditsWallet from "../pages/user/CreditsWallet";
+import UserCreateProject from "../pages/user/CreateProject";
 
 const ViewerRoutes = () => (
   <Route
@@ -17,6 +18,7 @@ const ViewerRoutes = () => (
     <Route index element={<UserDashboard />} />
     <Route path="dashboard" element={<UserDashboard />} />
     <Route path="projects" element={<MyProjects />} />
+    <Route path="project/new" element={<UserCreateProject />} />
     <Route path="credits" element={<CreditsWallet />} />
   </Route>
 );

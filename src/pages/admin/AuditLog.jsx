@@ -41,7 +41,7 @@ const AuditLog = () => {
             <h1>Audit Log</h1>
             <p className="page-subtitle">Immutable on-chain and off-chain action log</p>
 
-            {/* Filters */}
+
             <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
                 <div className="form-group" style={{ margin: 0, flex: "0 0 auto" }}>
                     <label style={{ fontSize: "12px" }}>Action Type</label>

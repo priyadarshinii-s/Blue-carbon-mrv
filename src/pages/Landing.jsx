@@ -1,7 +1,19 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+
+const SLIDES = ["/mangrove.jpg", "/saltmarsh.jpg", "/seagrass.jpg"];
+const INTERVAL_MS = 5000;
 
 const Landing = () => {
     const navigate = useNavigate();
+    const [currentSlide, setCurrentSlide] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+        }, INTERVAL_MS);
+        return () => clearInterval(timer);
+    }, []);
 
     const stats = [
         { label: "Projects Active", value: "24", icon: "🌿" },
@@ -20,65 +32,134 @@ const Landing = () => {
 
     return (
         <div style={{ minHeight: "100vh", background: "#f6f8fa" }}>
-            {/* Top Bar */}
+
             <div style={{
+                position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
                 display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "16px 40px", background: "#0f2a44", color: "white",
+                padding: "16px 40px",
+                background: "rgba(10, 28, 48, 0.92)",
+                backdropFilter: "blur(8px)",
+                borderBottom: "1px solid rgba(255,255,255,0.08)",
             }}>
-                <h1 style={{ fontSize: "20px", margin: 0, color: "white" }}>🌊 BlueCarbon MRV</h1>
+                <h1 style={{ fontSize: "20px", margin: 0, color: "white", display: "flex", alignItems: "center", gap: "8px" }}>
+                    <img src="/vite.svg" alt="Logo" style={{ width: "24px", height: "24px" }} />
+                    Blue Carbon Registry
+                </h1>
                 <button
                     className="primary-btn"
-                    style={{ background: "#0f766e" }}
+                    style={{ background: "#0f766e", letterSpacing: "0.4px" }}
                     onClick={() => navigate("/login")}
                 >
-                    Launch App
+                    Access Dashboard
                 </button>
             </div>
 
-            {/* Hero Section */}
             <div style={{
-                textAlign: "center", padding: "80px 20px 60px",
-                background: "linear-gradient(135deg, #0f2a44 0%, #164e63 100%)",
-                color: "white",
+                position: "relative",
+                height: "70vh",
+                minHeight: "500px",
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#000",
             }}>
-                <h1 style={{ fontSize: "36px", margin: "0 0 16px", color: "white" }}>
-                    Blockchain-Powered Blue Carbon MRV Registry
-                </h1>
-                <p style={{ fontSize: "18px", color: "#cfd8e3", maxWidth: "700px", margin: "0 auto 32px" }}>
-                    Transparent monitoring, reporting, and verification of coastal carbon sequestration projects.
-                    Powered by Polygon blockchain for immutable trust.
-                </p>
-                <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
-                    <button className="primary-btn" style={{ padding: "14px 32px", fontSize: "16px", background: "#0f766e" }} onClick={() => navigate("/login")}>
-                        Get Started
-                    </button>
-                    <button className="secondary-btn" style={{ padding: "14px 32px", fontSize: "16px" }} onClick={() => navigate("/register")}>
-                        Register
-                    </button>
+                {SLIDES.map((src, i) => (
+                    <div
+                        key={src}
+                        style={{
+                            position: "absolute",
+                            inset: 0,
+                            backgroundImage: `url(${src})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                            opacity: i === currentSlide ? 0.8 : 0,
+                            transition: "opacity 1.5s ease-in-out",
+                            zIndex: i === currentSlide ? 2 : 1,
+                        }}
+                    />
+                ))}
+
+                <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 3,
+                    background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.50) 50%, rgba(0,0,0,0.65) 100%)",
+                    pointerEvents: "none",
+                }} />
+
+                <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    zIndex: 4,
+                    opacity: 0.03,
+                    backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+                    backgroundSize: "28px 28px",
+                    pointerEvents: "none",
+                }} />
+
+                <div style={{
+                    position: "relative",
+                    zIndex: 4,
+                    textAlign: "center",
+                    padding: "0 24px",
+                    maxWidth: "780px",
+                }}>
+                    <h1 style={{
+                        fontSize: "clamp(36px, 6vw, 62px)",
+                        fontWeight: 900,
+                        color: "#ffffff",
+                        lineHeight: 1.1,
+                        letterSpacing: "-0.5px",
+                        marginBottom: "20px",
+                        textShadow: "0 2px 16px rgba(0,0,0,0.5)",
+                    }}>
+                        Blue Carbon Registry
+                    </h1>
+                    <p style={{
+                        fontSize: "clamp(16px, 2.2vw, 20px)",
+                        color: "rgba(255,255,255,0.9)",
+                        maxWidth: "600px",
+                        margin: "0 auto 36px",
+                        lineHeight: 1.6,
+                        textShadow: "0 1px 8px rgba(0,0,0,0.4)",
+                    }}>
+                        Transparent MRV for coastal carbon sequestration projects, powered by blockchain.
+                    </p>
+                    <div style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}>
+                        <button
+                            className="primary-btn"
+                            style={{
+                                padding: "15px 40px",
+                                fontSize: "16px",
+                                letterSpacing: "0.4px",
+                                background: "#0d9488"
+                            }}
+                            onClick={() => navigate("/login")}
+                        >
+                            Explore Registry
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            {/* Stats Section */}
             <div style={{
                 display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
                 gap: "20px", padding: "40px", maxWidth: "1000px", margin: "0 auto",
             }}>
                 {stats.map((s) => (
                     <div key={s.label} className="card" style={{ textAlign: "center", borderLeft: "4px solid #0f766e" }}>
-                        <div style={{ fontSize: "28px", marginBottom: "8px" }}>{s.icon}</div>
-                        <p style={{ fontSize: "28px", fontWeight: "bold", color: "#1a1a1a" }}>{s.value}</p>
-                        <h3 style={{ fontSize: "13px", color: "#6b7280" }}>{s.label}</h3>
+                        <div style={{ fontSize: "28px", marginBottom: "6px" }}>{s.icon}</div>
+                        <p style={{ fontSize: "28px", fontWeight: "bold", color: "#0f2a44", marginBottom: "4px" }}>{s.value}</p>
+                        <h3 style={{ fontSize: "13px", color: "#6b7280", fontWeight: 500 }}>{s.label}</h3>
                     </div>
                 ))}
             </div>
 
-            {/* How It Works */}
             <div style={{ padding: "40px 20px 60px", maxWidth: "800px", margin: "0 auto" }}>
                 <h2 style={{ textAlign: "center", marginBottom: "32px", fontSize: "24px" }}>How It Works</h2>
                 {steps.map((s) => (
-                    <div key={s.step} style={{
-                        display: "flex", gap: "16px", marginBottom: "20px", alignItems: "flex-start",
-                    }}>
+                    <div key={s.step} style={{ display: "flex", gap: "16px", marginBottom: "20px", alignItems: "flex-start" }}>
                         <div style={{
                             width: "36px", height: "36px", borderRadius: "50%",
                             background: "#0f2a44", color: "white",
@@ -95,7 +176,6 @@ const Landing = () => {
                 ))}
             </div>
 
-            {/* Public Project Map */}
             <div style={{ padding: "0 40px 60px", maxWidth: "1000px", margin: "0 auto" }}>
                 <h2 style={{ textAlign: "center", marginBottom: "20px", fontSize: "24px" }}>Active Projects Map</h2>
                 <div style={{
@@ -122,15 +202,8 @@ const Landing = () => {
                 </div>
             </div>
 
-            {/* Footer */}
-            <div style={{
-                background: "#0f2a44", color: "#cfd8e3", textAlign: "center",
-                padding: "20px", fontSize: "13px",
-            }}>
-                BlueCarbon MRV Registry v1.0 | Powered by Polygon Blockchain |{" "}
-                <a href="https://polygonscan.com" target="_blank" rel="noopener noreferrer" style={{ color: "#0f766e" }}>
-                    Explorer
-                </a>
+            <div style={{ background: "#0f2a44", color: "#cfd8e3", textAlign: "center", padding: "20px", fontSize: "13px" }}>
+                Blue Carbon Registry v1.0
             </div>
         </div>
     );

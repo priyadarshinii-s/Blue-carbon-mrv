@@ -16,13 +16,6 @@
   --shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
-[data-theme="dark"] {
-  --bg: #111827;
-  --card-bg: #1f2937;
-  --border: #374151;
-  --text: #f9fafb;
-  --text-muted: #9ca3af;
-}
 
 
 *,
@@ -41,13 +34,19 @@ body {
   line-height: 1.5;
 }
 
-/* ── Layout ── */
+h1,
+h2,
+h3 {
+  letter-spacing: 0.4px;
+}
+
+
 .admin-container {
   display: flex;
   min-height: 100vh;
 }
 
-/* ── Sidebar ── */
+
 .sidebar {
   width: var(--sidebar-width);
   background: var(--navy);
@@ -74,6 +73,7 @@ body {
 }
 
 .sidebar nav {
+  letter-spacing: 0.4px;
   display: flex;
   flex-direction: column;
   padding: 12px 0;
@@ -123,7 +123,7 @@ body {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ── Top Navbar ── */
+
 .top-navbar {
   position: fixed;
   top: 0;
@@ -140,7 +140,7 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* ── Main Content ── */
+
 .content {
   margin-left: var(--sidebar-width);
   padding-top: var(--topbar-height);
@@ -153,7 +153,7 @@ body {
   padding: 24px 28px;
 }
 
-/* ── Typography ── */
+
 h1 {
   font-size: 22px;
   font-weight: 700;
@@ -177,7 +177,7 @@ h3 {
   display: none;
 }
 
-/* ── Cards ── */
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -193,7 +193,7 @@ h3 {
   margin-bottom: 8px;
 }
 
-/* ── Tables ── */
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -238,7 +238,7 @@ h3 {
   background: #374151;
 }
 
-/* ── Buttons ── */
+
 button {
   cursor: pointer;
   font-family: inherit;
@@ -296,7 +296,7 @@ button {
   background: #4b5563;
 }
 
-/* ── Forms ── */
+
 .form-group {
   margin-bottom: 16px;
 }
@@ -343,7 +343,7 @@ button {
   margin-top: 4px;
 }
 
-/* ── Badges ── */
+
 .badge {
   display: inline-block;
   padding: 3px 10px;
@@ -394,7 +394,7 @@ button {
   color: #991b1b;
 }
 
-/* ── Modals ── */
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -418,7 +418,7 @@ button {
   position: relative;
 }
 
-/* ── Stat Card ── */
+
 .stat-card {
   background: var(--card-bg);
   border: 1px solid var(--border);
@@ -439,7 +439,7 @@ button {
   margin-top: 4px;
 }
 
-/* ── Timeline ── */
+
 .timeline {
   padding: 8px 0;
 }
@@ -474,7 +474,7 @@ button {
   flex: 1;
 }
 
-/* ── Utility ── */
+
 .mt-20 {
   margin-top: 20px;
 }
@@ -487,7 +487,7 @@ button {
   max-width: 900px;
 }
 
-/* ── Centered action buttons (approve/reject) ── */
+
 .action-btns {
   display: flex;
   gap: 12px;
@@ -503,7 +503,7 @@ button {
   min-width: 140px;
 }
 
-/* ── Notification Bell dropdown ── */
+
 .notif-dropdown {
   position: absolute;
   top: 100%;
@@ -518,7 +518,7 @@ button {
   overflow: hidden;
 }
 
-/* ── Scrollbar ── */
+
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -532,7 +532,7 @@ button {
   border-radius: 3px;
 }
 
-/* ── Responsive ── */
+
 @media (max-width: 768px) {
   .sidebar {
     display: none;
@@ -553,4 +553,65 @@ button {
   .table {
     font-size: 12px;
   }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 12px rgba(15, 118, 110, 0.1);
+  }
+
+  50% {
+    box-shadow: 0 0 0 20px rgba(15, 118, 110, 0.02);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.helper-text {
+  display: block;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.wide {
+  max-width: 860px;
+}
+
+.mt-20 {
+  margin-top: 20px;
 }

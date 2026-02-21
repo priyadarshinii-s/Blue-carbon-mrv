@@ -63,16 +63,19 @@ const Register = () => {
 
     return (
         <div style={{
-            minHeight: "100vh", display: "flex", justifyContent: "center",
+            height: "100vh", display: "flex", justifyContent: "center",
             alignItems: "center", background: "#f6f8fa", padding: "20px",
         }}>
             <div style={{
                 background: "white", padding: "32px", width: "480px",
                 borderRadius: "8px", border: "1px solid #e5e7eb",
             }}>
-                <h1 style={{ textAlign: "center", fontSize: "22px" }}>🌊 Register</h1>
+                <h1 style={{ textAlign: "center", fontSize: "22px", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                    <img src="/vite.svg" alt="Logo" style={{ width: "24px", height: "24px" }} />
+                    Register
+                </h1>
                 <p style={{ textAlign: "center", marginBottom: "24px", color: "#6b7280", fontSize: "14px" }}>
-                    Create your BlueCarbon MRV account
+                    Create your Blue Carbon Registry account
                 </p>
 
                 <form onSubmit={handleSubmit}>

@@ -30,7 +30,7 @@ const CreditsWallet = () => {
             <h1>Carbon Credits Wallet</h1>
             <p className="page-subtitle">Your tokenized carbon credits on Polygon blockchain</p>
 
-            {/* Summary Cards */}
+
             <div className="card-grid">
                 <div className="card" style={{ borderLeft: "4px solid #0f766e" }}>
                     <h3 style={{ fontSize: "13px", color: "#6b7280" }}>Active Credits</h3>
@@ -49,7 +49,7 @@ const CreditsWallet = () => {
                 </div>
             </div>
 
-            {/* Wallet Address */}
+
             <div className="card mt-20" style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                 <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: "13px", color: "#6b7280", margin: "0 0 4px" }}>Wallet Address (ERC-20 Token Holder)</h3>
@@ -60,7 +60,7 @@ const CreditsWallet = () => {
                 </a>
             </div>
 
-            {/* Credits Table */}
+
             <div className="mt-30">
                 <h2 style={{ fontSize: "18px", marginBottom: "12px" }}>Credit History</h2>
                 <table className="table">
@@ -115,7 +115,7 @@ const CreditsWallet = () => {
                 </table>
             </div>
 
-            {/* Info box */}
+
             <div className="card mt-20" style={{ background: "#fffbeb", border: "1px solid #fde68a" }}>
                 <h3 style={{ fontSize: "14px", marginBottom: "6px" }}>ℹ️ About Carbon Credit Retirement</h3>
                 <p style={{ fontSize: "13px", color: "#78350f" }}>

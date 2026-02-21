@@ -107,7 +107,7 @@ const VerificationQueue = () => {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-          {/* Left column */}
+
           <div>
             <div className="card">
               <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>Submission Data</h3>
@@ -151,7 +151,7 @@ const VerificationQueue = () => {
             </div>
           </div>
 
-          {/* Right column */}
+
           <div>
             <div className="card">
               <h3 style={{ fontSize: "14px", marginBottom: "10px" }}>GPS Location</h3>
@@ -195,7 +195,7 @@ const VerificationQueue = () => {
               <Timeline steps={timelineSteps} />
             </div>
 
-            {/* Decision panel */}
+
             <div className="card mt-20">
               <h3 style={{ fontSize: "14px", marginBottom: "12px" }}>Validator Decision</h3>
               <div className="form-group">
@@ -207,7 +207,7 @@ const VerificationQueue = () => {
                   rows={3}
                 />
               </div>
-              {/* Centered, larger action buttons */}
+
               <div className="action-btns">
                 <button className="primary-btn" onClick={() => handleDecision("approved")} disabled={saving}>
                   {saving ? "Processing..." : "Approve"}

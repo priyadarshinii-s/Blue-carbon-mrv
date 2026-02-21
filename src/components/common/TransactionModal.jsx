@@ -4,7 +4,7 @@ const TransactionModal = ({ isOpen, onClose, status = "pending", txHash = "", ti
     return (
         <div className="modal-overlay" onClick={status !== "pending" ? onClose : undefined}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "400px", textAlign: "center" }}>
-                {/* Header */}
+
                 <h2 style={{ fontSize: "17px", marginBottom: "20px" }}>{title}</h2>
 
                 {status === "pending" && (

@@ -91,7 +91,7 @@ const MintApproval = () => {
           </button>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-            {/* Left Column */}
+
             <div>
               <div className="card">
                 <h3 style={{ fontSize: "16px", marginBottom: "12px" }}>{selectedItem.project}</h3>
@@ -109,7 +109,7 @@ const MintApproval = () => {
               </div>
             </div>
 
-            {/* Right Column */}
+
             <div>
               <div className="card">
                 <h3 style={{ fontSize: "14px", marginBottom: "12px" }}>Submission Timeline</h3>
@@ -126,7 +126,7 @@ const MintApproval = () => {
                     onChange={(e) => setRejectReason(e.target.value)}
                   />
                 </div>
-                {/* Centered, larger action buttons */}
+
                 <div className="action-btns">
                   <button className="primary-btn" onClick={handleMint}>
                     Approve &amp; Mint

@@ -23,7 +23,7 @@ const UserDashboard = () => {
                 <StatCard title="Your Credits" value="50" color="#b45309" />
             </div>
 
-            {/* Map */}
+
             <div className="mt-30">
                 <h2 style={{ fontSize: "18px", marginBottom: "12px" }}>Projects Near You</h2>
                 <MapComponent height="280px" pins={[
@@ -33,7 +33,7 @@ const UserDashboard = () => {
                 ]} />
             </div>
 
-            {/* Featured projects */}
+
             <div className="mt-30">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                     <h2 style={{ fontSize: "18px" }}>Featured Projects</h2>

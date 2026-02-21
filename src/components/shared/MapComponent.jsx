@@ -11,14 +11,14 @@ const MapComponent = ({ pins = [], height = "240px", editable = false, showPolyg
             position: "relative",
             overflow: "hidden",
         }}>
-            {/* Grid background */}
+
             <div style={{
                 position: "absolute", inset: 0, opacity: 0.15,
                 backgroundImage: "linear-gradient(#0f2a44 1px, transparent 1px), linear-gradient(90deg, #0f2a44 1px, transparent 1px)",
                 backgroundSize: "40px 40px",
             }} />
 
-            {/* Polygon overlay */}
+
             {showPolygon && (
                 <div style={{
                     position: "absolute",
@@ -29,7 +29,7 @@ const MapComponent = ({ pins = [], height = "240px", editable = false, showPolyg
                 }} />
             )}
 
-            {/* Pins */}
+
             {pins.map((pin, i) => (
                 <div key={i} style={{
                     position: "absolute",
@@ -43,7 +43,7 @@ const MapComponent = ({ pins = [], height = "240px", editable = false, showPolyg
                 </div>
             ))}
 
-            {/* Center label */}
+
             <div style={{ position: "relative", zIndex: 1, textAlign: "center", color: "#6b7280" }}>
                 <div style={{ fontSize: "24px" }}>🗺️</div>
                 <div style={{ fontSize: "12px", marginTop: "4px" }}>
