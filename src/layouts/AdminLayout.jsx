@@ -1,40 +1,20 @@
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import "./adminLayout.css";
-import { useAuth } from "../context/AuthContext";
+import { Outlet } from "react-router-dom";
+import Sidebar from "../components/common/Sidebar";
 import TopNavbar from "../components/common/TopNavbar";
 
+const adminMenuItems = [
+  { path: "/admin/dashboard", label: "Dashboard", icon: "📊" },
+  { path: "/admin/users", label: "User Management", icon: "👥" },
+  { path: "/admin/projects", label: "Projects", icon: "🌿" },
+  { path: "/admin/approvals", label: "Mint Approvals", icon: "💎" },
+  { path: "/admin/reports", label: "Reports & Exports", icon: "📑" },
+  { path: "/admin/audit", label: "Audit Log", icon: "🔍" },
+];
+
 const AdminLayout = () => {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   return (
     <div className="admin-container">
-      <aside className="sidebar">
-        <h2 className="logo">Blue Carbon MRV</h2>
-
-        <nav>
-          <NavLink to="/admin/dashboard">Dashboard</NavLink>
-          <NavLink to="/admin/projects">Projects</NavLink>
-          <NavLink to="/admin/users">Users</NavLink>
-          <NavLink to="/admin/approvals">Mint Approvals</NavLink>
-          <NavLink to="/admin/reports">Reports</NavLink>
-        </nav>
-         {/* subtle logout */}
-        <div style={{ marginTop: "auto" }}>
-          <button
-            onClick={handleLogout}
-            className="logout-link"
-          >
-            Logout
-          </button>
-        </div>
-      </aside>
-
+      <Sidebar items={adminMenuItems} />
       <main className="content">
         <TopNavbar />
         <Outlet />

@@ -1,52 +1,41 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import AdminRoutes from "./routes/AdminRoutes";
+import { Routes } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+import { Route } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
+
+import Landing from "./pages/Landing";
 import Login from "./pages/auth/Login";
-import ProtectedRoute from "./components/common/ProtectedRoute";
+import Register from "./pages/auth/Register";
+import Unauthorized from "./pages/Unauthorized";
+import NotFound from "./pages/NotFound";
+
+import AdminRoutes from "./routes/AdminRoutes";
 import FieldRoutes from "./routes/FieldRoutes";
 import ValidatorRoutes from "./routes/ValidatorRoutes";
 import ViewerRoutes from "./routes/ViewerRoutes";
 
+const RoleRedirect = () => {
+  const { isAuthenticated, role } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (role === "ADMIN") return <Navigate to="/admin/dashboard" replace />;
+  if (role === "FIELD") return <Navigate to="/field/dashboard" replace />;
+  if (role === "VALIDATOR") return <Navigate to="/validator/dashboard" replace />;
+  return <Navigate to="/user/dashboard" replace />;
+};
+
 const App = () => {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
-
-      <Route
-        path="/admin/*"
-        element={
-          <ProtectedRoute allowedRole="ADMIN">
-            <AdminRoutes />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/field/*"
-        element={
-          <ProtectedRoute allowedRole="FIELD">
-            <FieldRoutes />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/validator/*"
-        element={
-          <ProtectedRoute allowedRole="VALIDATOR">
-            <ValidatorRoutes />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/viewer/*"
-        element={
-          <ProtectedRoute allowedRole="VIEWER">
-            <ViewerRoutes />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/register" element={<Register />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="/dashboard" element={<RoleRedirect />} />
+      {AdminRoutes()}
+      {FieldRoutes()}
+      {ValidatorRoutes()}
+      {ViewerRoutes()}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

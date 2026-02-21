@@ -1,15 +1,24 @@
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
-const ProtectedRoute = ({ children, allowedRole }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, role } = useAuth();
+  const navigate = useNavigate();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    return (
+      <div style={{ display: "none" }}>
+        {(() => { window.location.replace("/login"); return null; })()}
+      </div>
+    );
   }
 
-  if (allowedRole && role !== allowedRole) {
-    return <Navigate to="/login" />;
+  if (allowedRoles && !allowedRoles.includes(role)) {
+    return (
+      <div style={{ display: "none" }}>
+        {(() => { window.location.replace("/unauthorized"); return null; })()}
+      </div>
+    );
   }
 
   return children;

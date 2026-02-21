@@ -1,33 +1,18 @@
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Outlet } from "react-router-dom";
+import Sidebar from "../components/common/Sidebar";
 import TopNavbar from "../components/common/TopNavbar";
 
+const fieldMenuItems = [
+  { path: "/field/dashboard", label: "My Dashboard", icon: "📊" },
+  { path: "/field/projects", label: "Assigned Projects", icon: "🌿" },
+  { path: "/field/submit", label: "Submit New Data", icon: "📝" },
+  { path: "/field/history", label: "My Submissions", icon: "📋" },
+];
+
 const FieldOfficerLayout = () => {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   return (
     <div className="admin-container">
-      <aside className="sidebar">
-        <h2 className="logo">Blue Carbon MRV</h2>
-
-        <nav>
-          <NavLink to="/field/dashboard">Dashboard</NavLink>
-          <NavLink to="/field/projects">Assigned Projects</NavLink>
-          <NavLink to="/field/new">New Submission</NavLink>
-          <NavLink to="/field/history">Submission History</NavLink>
-        </nav>
-
-        <button className="logout-link" onClick={handleLogout}>
-          Logout
-        </button>
-      </aside>
-
+      <Sidebar items={fieldMenuItems} />
       <main className="content">
         <TopNavbar />
         <Outlet />

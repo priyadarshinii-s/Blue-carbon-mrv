@@ -1,32 +1,17 @@
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Outlet } from "react-router-dom";
+import Sidebar from "../components/common/Sidebar";
 import TopNavbar from "../components/common/TopNavbar";
 
+const validatorMenuItems = [
+  { path: "/validator/dashboard", label: "Dashboard", icon: "📊" },
+  { path: "/validator/queue", label: "Verification Queue", icon: "📋" },
+  { path: "/validator/history", label: "My Verified", icon: "✅" },
+];
+
 const ValidatorLayout = () => {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   return (
     <div className="admin-container">
-      <aside className="sidebar">
-        <h2 className="logo">Blue Carbon MRV</h2>
-
-        <nav>
-          <NavLink to="/validator/dashboard">Dashboard</NavLink>
-          <NavLink to="/validator/queue">Verification Queue</NavLink>
-          <NavLink to="/validator/history">History</NavLink>
-        </nav>
-
-        <button className="logout-link" onClick={handleLogout}>
-          Logout
-        </button>
-      </aside>
-
+      <Sidebar items={validatorMenuItems} />
       <main className="content">
         <TopNavbar />
         <Outlet />

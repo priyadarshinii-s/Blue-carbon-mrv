@@ -1,19 +1,24 @@
-import { Routes, Route } from "react-router-dom";
+import { Route } from "react-router-dom";
 import ValidatorLayout from "../layouts/ValidatorLayout";
+import ProtectedRoute from "../components/common/ProtectedRoute";
 import ValidatorDashboard from "../pages/validator/ValidatorDashboard";
 import VerificationQueue from "../pages/validator/VerificationQueue";
-import SubmissionReview from "../pages/validator/SubmissionReview";
-import VerificationHistory from "../pages/validator/VerificationHistory";
+import VerifiedHistory from "../pages/validator/VerifiedHistory";
 
 const ValidatorRoutes = () => (
-  <Routes>
-    <Route element={<ValidatorLayout />}>
-      <Route path="dashboard" element={<ValidatorDashboard />} />
-      <Route path="queue" element={<VerificationQueue />} />
-      <Route path="review/:id" element={<SubmissionReview />} />
-      <Route path="history" element={<VerificationHistory />} />
-    </Route>
-  </Routes>
+  <Route
+    path="/validator"
+    element={
+      <ProtectedRoute allowedRoles={["VALIDATOR", "ADMIN"]}>
+        <ValidatorLayout />
+      </ProtectedRoute>
+    }
+  >
+    <Route index element={<ValidatorDashboard />} />
+    <Route path="dashboard" element={<ValidatorDashboard />} />
+    <Route path="queue" element={<VerificationQueue />} />
+    <Route path="history" element={<VerifiedHistory />} />
+  </Route>
 );
 
 export default ValidatorRoutes;

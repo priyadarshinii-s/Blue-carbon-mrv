@@ -1,15 +1,24 @@
-import { Routes, Route } from "react-router-dom";
+import { Route } from "react-router-dom";
 import ViewerLayout from "../layouts/ViewerLayout";
-import ViewerDashboard from "../pages/viewer/ViewerDashboard";
-import ViewerProjects from "../pages/viewer/ViewerProjects";
+import ProtectedRoute from "../components/common/ProtectedRoute";
+import UserDashboard from "../pages/user/UserDashboard";
+import MyProjects from "../pages/user/MyProjects";
+import CreditsWallet from "../pages/user/CreditsWallet";
 
 const ViewerRoutes = () => (
-  <Routes>
-    <Route element={<ViewerLayout />}>
-      <Route path="dashboard" element={<ViewerDashboard />} />
-      <Route path="projects" element={<ViewerProjects />} />
-    </Route>
-  </Routes>
+  <Route
+    path="/user"
+    element={
+      <ProtectedRoute allowedRoles={["VIEWER", "ADMIN", "FIELD", "VALIDATOR"]}>
+        <ViewerLayout />
+      </ProtectedRoute>
+    }
+  >
+    <Route index element={<UserDashboard />} />
+    <Route path="dashboard" element={<UserDashboard />} />
+    <Route path="projects" element={<MyProjects />} />
+    <Route path="credits" element={<CreditsWallet />} />
+  </Route>
 );
 
 export default ViewerRoutes;

@@ -1,30 +1,17 @@
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet } from "react-router-dom";
+import Sidebar from "../components/common/Sidebar";
 import TopNavbar from "../components/common/TopNavbar";
-import { useAuth } from "../context/AuthContext";
+
+const viewerMenuItems = [
+  { path: "/user/dashboard", label: "Public Dashboard", icon: "📊" },
+  { path: "/user/projects", label: "My Projects", icon: "🌿" },
+  { path: "/user/credits", label: "Credits Wallet", icon: "💎" },
+];
 
 const ViewerLayout = () => {
-    const { logout } = useAuth();
-    const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
   return (
     <div className="admin-container">
-      <aside className="sidebar">
-        <h2 className="logo">Blue Carbon MRV</h2>
-      
-        <nav>
-          <NavLink to="/viewer/dashboard">Dashboard</NavLink>
-          <NavLink to="/viewer/projects">Projects</NavLink>
-        </nav>
-
-        <button className="logout-link" onClick={handleLogout}>
-          Logout
-        </button>
-      </aside>
-
+      <Sidebar items={viewerMenuItems} />
       <main className="content">
         <TopNavbar />
         <Outlet />
@@ -33,4 +20,4 @@ const ViewerLayout = () => {
   );
 };
 
-export default ViewerLayout;5555
+export default ViewerLayout;
