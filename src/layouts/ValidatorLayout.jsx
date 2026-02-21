@@ -5,7 +5,7 @@ import TopNavbar from "../components/common/TopNavbar";
 const validatorMenuItems = [
   { path: "/validator/dashboard", label: "Dashboard", icon: "📊" },
   { path: "/validator/queue", label: "Verification Queue", icon: "📋" },
-  { path: "/validator/history", label: "My Verified", icon: "✅" },
+  { path: "/validator/history", label: "Verified Submissions", icon: "✅" },
 ];
 
 const ValidatorLayout = () => {

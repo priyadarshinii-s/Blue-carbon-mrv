@@ -181,7 +181,6 @@ const CreateProject = () => {
         <h1>Create New Project</h1>
         <button className="secondary-btn" style={{ fontSize: "13px" }} onClick={handleSaveDraft}>Save Draft</button>
       </div>
-      <p className="page-subtitle">Register a new blue carbon project on the MRV blockchain</p>
 
       <div className="card wide mt-20" style={{ padding: "28px" }}>
         <ProjectStepper steps={STEPS} currentStep={step} />

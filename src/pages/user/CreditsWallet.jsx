@@ -28,7 +28,6 @@ const CreditsWallet = () => {
     return (
         <>
             <h1>Carbon Credits Wallet</h1>
-            <p className="page-subtitle">Your tokenized carbon credits on Polygon blockchain</p>
 
 
             <div className="card-grid">

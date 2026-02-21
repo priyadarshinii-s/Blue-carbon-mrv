@@ -39,7 +39,6 @@ const AuditLog = () => {
     return (
         <>
             <h1>Audit Log</h1>
-            <p className="page-subtitle">Immutable on-chain and off-chain action log</p>
 
 
             <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>

@@ -165,7 +165,6 @@ const UserCreateProject = () => {
                 <h1>Register a New Project</h1>
                 <button className="secondary-btn" style={{ fontSize: "13px" }} onClick={handleSaveDraft}>Save Draft</button>
             </div>
-            <p className="page-subtitle">Submit your blue carbon project to the MRV Registry</p>
 
             <div className="card wide mt-20" style={{ padding: "28px" }}>
                 <ProjectStepper steps={STEPS} currentStep={step} />

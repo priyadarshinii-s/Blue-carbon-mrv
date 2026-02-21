@@ -29,17 +29,24 @@ const FieldDashboard = () => {
       </div>
 
       <div className="mt-30">
-        <h2 style={{ fontSize: "18px", marginBottom: "12px" }}>My Assigned Projects</h2>
-        <div className="card-grid">
+        <h2 style={{ fontSize: "18px", marginBottom: "16px" }}>My Assigned Projects</h2>
+        <div className="list-container">
           {assignedProjects.map((p) => (
-            <div key={p.id} className="card">
-              <h3 style={{ fontSize: "15px", marginBottom: "6px" }}>{p.name}</h3>
-              <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>{p.location} &middot; {p.type}</p>
-              <p style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>{p.area} ha &middot; {p.submissions} submissions</p>
-              <p style={{ fontSize: "12px", color: "#b45309", marginBottom: "10px" }}>Due: {p.dueDate}</p>
-              <button className="primary-btn" style={{ fontSize: "12px", width: "100%" }} onClick={() => navigate(`/field/submit?project=${p.id}`)}>
-                Submit Data
-              </button>
+            <div key={p.id} className="list-row" style={{ cursor: "pointer" }} onClick={() => navigate(`/field/submit?project=${p.id}`)}>
+              <div className="list-row-main">
+                <span className="list-row-title">{p.name}</span>
+                <span className="list-row-meta">{p.location} · {p.type} · {p.area} ha · {p.submissions} submissions · Due {p.dueDate}</span>
+              </div>
+              <div className="list-row-end">
+                <span style={{ fontSize: "11px", background: "#dcfce7", color: "#047857", borderRadius: "999px", padding: "2px 10px", fontWeight: 600 }}>Active</span>
+                <button
+                  className="primary-btn"
+                  style={{ fontSize: "12px", padding: "5px 14px" }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/field/submit?project=${p.id}`); }}
+                >
+                  Submit Data
+                </button>
+              </div>
             </div>
           ))}
         </div>

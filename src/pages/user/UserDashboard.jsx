@@ -14,7 +14,6 @@ const UserDashboard = () => {
     return (
         <>
             <h1>Community Dashboard</h1>
-            <p className="page-subtitle">Public view of blue carbon projects and credits</p>
 
             <div className="card-grid">
                 <StatCard title="Active Projects" value="24" color="#0f766e" />

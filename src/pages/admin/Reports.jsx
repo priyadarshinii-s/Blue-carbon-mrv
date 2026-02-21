@@ -40,7 +40,6 @@ const Reports = () => {
   return (
     <>
       <h1>Reports & Exports</h1>
-      <p className="page-subtitle">Generate and export compliance reports</p>
 
 
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>

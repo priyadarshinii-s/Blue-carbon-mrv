@@ -103,7 +103,6 @@ const NewSubmission = () => {
   return (
     <>
       <h1>New Field Submission</h1>
-      <p className="page-subtitle">Submit verified plantation data for MRV review</p>
 
       <div className="card form-card wide mt-20">
 

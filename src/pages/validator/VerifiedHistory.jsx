@@ -9,6 +9,8 @@ const verifiedHistory = [
     { id: 5, project: "Tidal Flat – AP", officer: "Ravi Kumar", date: "28 Jan 2026", trees: 210, survivalRate: 70, decision: "correction", txHash: "—", comment: "Photos blurry. Re-submit required." },
 ];
 
+const borderColor = { approved: "#047857", rejected: "#b91c1c", correction: "#b45309" };
+
 const VerifiedHistory = () => {
     const [filter, setFilter] = useState("ALL");
     const [detail, setDetail] = useState(null);
@@ -17,56 +19,42 @@ const VerifiedHistory = () => {
 
     return (
         <>
-            <h1>My Verified Submissions</h1>
-            <p className="page-subtitle">All submissions you have reviewed and finalised</p>
-
-            <div style={{ marginBottom: "16px" }}>
-                <label style={{ fontSize: "13px", marginRight: "8px" }}>Filter:</label>
-                <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ width: "auto", padding: "6px 10px" }}>
-                    <option value="ALL">All</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                    <option value="correction">Correction Requested</option>
-                </select>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <div>
+                    <h1>Verified Submissions</h1>
+                </div>
+                <div>
+                    <label style={{ fontSize: "13px", marginRight: "8px" }}>Filter:</label>
+                    <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ width: "auto", padding: "6px 10px" }}>
+                        <option value="ALL">All</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="correction">Correction Requested</option>
+                    </select>
+                </div>
             </div>
 
-            <table className="table">
-                <thead>
-                    <tr>
-                        <th>Project</th>
-                        <th>Field Officer</th>
-                        <th>Date</th>
-                        <th>Trees</th>
-                        <th>Decision</th>
-                        <th>Tx Hash</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filtered.map((v) => (
-                        <tr key={v.id}>
-                            <td style={{ fontWeight: 500 }}>{v.project}</td>
-                            <td>{v.officer}</td>
-                            <td>{v.date}</td>
-                            <td>{v.trees}</td>
-                            <td><StatusBadge status={v.decision} /></td>
-                            <td>
-                                {v.txHash !== "—" ? (
-                                    <a href={`https://mumbai.polygonscan.com/tx/${v.txHash}`} target="_blank" rel="noopener noreferrer"
-                                        style={{ fontSize: "11px", fontFamily: "monospace", color: "#0f766e" }}>
-                                        {v.txHash}
-                                    </a>
-                                ) : <span style={{ fontSize: "12px", color: "#9ca3af" }}>—</span>}
-                            </td>
-                            <td>
-                                <button className="secondary-btn" style={{ fontSize: "12px", padding: "4px 10px" }} onClick={() => setDetail(v)}>
-                                    View
-                                </button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <div className="list-container">
+                {filtered.map((v) => (
+                    <div
+                        key={v.id}
+                        className="list-row"
+                        style={{ cursor: "pointer", borderLeft: `3px solid ${borderColor[v.decision] || "#e5e7eb"}` }}
+                        onClick={() => setDetail(v)}
+                    >
+                        <div className="list-row-main">
+                            <span className="list-row-title">{v.project}</span>
+                            <span className="list-row-meta">{v.officer} · {v.date} · {v.trees} trees · {v.survivalRate}% survival</span>
+                        </div>
+                        <div className="list-row-end">
+                            <StatusBadge status={v.decision} />
+                            <button className="secondary-btn" style={{ fontSize: "12px", padding: "5px 12px" }} onClick={(e) => { e.stopPropagation(); setDetail(v); }}>
+                                View
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
 
             {detail && (
                 <div className="modal-overlay" onClick={() => setDetail(null)}>
@@ -80,10 +68,11 @@ const VerifiedHistory = () => {
                             <div><strong>Officer:</strong> {detail.officer}</div>
                             <div><strong>Trees:</strong> {detail.trees} @ {detail.survivalRate}% survival</div>
                             <div><strong>Decision:</strong> <StatusBadge status={detail.decision} /></div>
+                            {detail.txHash !== "—" && (
+                                <div><strong>Tx:</strong> <a href={`https://mumbai.polygonscan.com/tx/${detail.txHash}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", fontFamily: "monospace", color: "#0f766e" }}>{detail.txHash}</a></div>
+                            )}
                         </div>
-                        <div className="card mt-20" style={{
-                            borderLeftColor: detail.decision === "approved" ? "#047857" : detail.decision === "rejected" ? "#b91c1c" : "#b45309",
-                        }}>
+                        <div className="card mt-20" style={{ borderLeftColor: borderColor[detail.decision] }}>
                             <h3 style={{ fontSize: "13px", marginBottom: "6px" }}>Your Comment</h3>
                             <p style={{ fontSize: "13px" }}>{detail.comment}</p>
                         </div>
