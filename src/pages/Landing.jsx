@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const SLIDES = ["/mangrove.jpg", "/saltmarsh.jpg", "/seagrass.jpg"];
 const INTERVAL_MS = 5000;
 
 const Landing = () => {
     const navigate = useNavigate();
+    const { openLogin, openRegister, isAuthenticated } = useAuth();
     const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
@@ -33,25 +35,43 @@ const Landing = () => {
     return (
         <div style={{ minHeight: "100vh", background: "#f6f8fa" }}>
 
-            <div style={{
-                position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
+            <div className="frosted-navbar" style={{
+                position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
                 display: "flex", justifyContent: "space-between", alignItems: "center",
                 padding: "16px 40px",
-                background: "rgba(10, 28, 48, 0.92)",
-                backdropFilter: "blur(8px)",
-                borderBottom: "1px solid rgba(255,255,255,0.08)",
             }}>
                 <h1 style={{ fontSize: "20px", margin: 0, color: "white", display: "flex", alignItems: "center", gap: "8px" }}>
                     <img src="/vite.svg" alt="Logo" style={{ width: "24px", height: "24px" }} />
                     Blue Carbon Registry
                 </h1>
-                <button
-                    className="primary-btn"
-                    style={{ background: "#0f766e", letterSpacing: "0.4px" }}
-                    onClick={() => navigate("/login")}
-                >
-                    Access Dashboard
-                </button>
+                <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                    {!isAuthenticated ? (
+                        <>
+                            <button
+                                className="primary-btn"
+                                onClick={openLogin}
+                                style={{ background: "#0f766e", fontSize: "14px", padding: "10px 24px", border: "none" }}
+                            >
+                                Login
+                            </button>
+                            <button
+                                className="primary-btn"
+                                onClick={openRegister}
+                                style={{ background: "#0f766e", fontSize: "14px", padding: "10px 24px", border: "none" }}
+                            >
+                                Register
+                            </button>
+                        </>
+                    ) : (
+                        <button
+                            className="primary-btn"
+                            style={{ background: "#0f766e", letterSpacing: "0.4px" }}
+                            onClick={() => navigate("/dashboard")}
+                        >
+                            Open Dashboard
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div style={{
@@ -135,9 +155,9 @@ const Landing = () => {
                                 letterSpacing: "0.4px",
                                 background: "#0d9488"
                             }}
-                            onClick={() => navigate("/login")}
+                            onClick={isAuthenticated ? () => navigate("/dashboard") : openLogin}
                         >
-                            Explore Registry
+                            {isAuthenticated ? "Go to Dashboard" : "Explore Registry"}
                         </button>
                     </div>
                 </div>

@@ -11,7 +11,7 @@
   --text: #1a1a2e;
   --text-muted: #6b7280;
   --sidebar-width: 220px;
-  --topbar-height: 56px;
+  --topbar-height: 65px;
   --radius: 6px;
   --shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
@@ -49,7 +49,8 @@ h3 {
 
 .sidebar {
   width: var(--sidebar-width);
-  background: var(--navy);
+  background: rgba(10, 28, 48, 0.98);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
   color: white;
   display: flex;
   flex-direction: column;
@@ -60,7 +61,7 @@ h3 {
   left: 0;
   height: 100vh;
   overflow-y: auto;
-  z-index: 10;
+  z-index: 100;
 }
 
 .sidebar .logo {
@@ -134,10 +135,18 @@ h3 {
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: end;
   padding: 0 24px;
-  z-index: 9;
+  z-index: 90;
   box-shadow: var(--shadow);
+}
+
+.frosted-navbar {
+  background: rgba(10, 28, 48, 0.95);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
 }
 
 
@@ -453,24 +462,86 @@ button {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 20px;
+  backdrop-filter: blur(12px);
 }
 
 .modal-content {
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: 12px;
+  position: relative;
   padding: 24px;
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.auth-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 36px 32px;
+  width: 95%;
+  max-width: 440px;
   position: relative;
+  color: #1a1a2e;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  animation: authModalIn 0.2s ease-out;
+}
+
+@keyframes authModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.auth-modal input,
+.auth-modal select {
+  background: #f5f7fa !important;
+  color: #1a1a2e !important;
+  border: 1.5px solid #e0e4ea !important;
+  border-radius: 8px !important;
+  padding: 12px 14px !important;
+  width: 100% !important;
+  font-size: 14px !important;
+  outline: none !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box !important;
+}
+
+.auth-modal input:focus,
+.auth-modal select:focus {
+  border-color: #0f766e !important;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1) !important;
+}
+
+.auth-modal input::placeholder {
+  color: #9ca3af;
+}
+
+.auth-modal label,
+.auth-modal .form-group label {
+  color: #374151 !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  display: block !important;
+  margin-bottom: 6px !important;
+}
+
+.auth-modal .form-group {
+  margin-bottom: 16px;
 }
 
 

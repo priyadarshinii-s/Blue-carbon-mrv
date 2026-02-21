@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext(null);
 
@@ -7,7 +8,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [walletAddress, setWalletAddress] = useState(null);
-
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState("LOGIN");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const storedUser = localStorage.getItem("bcmrv_user");
@@ -35,11 +38,24 @@ export const AuthProvider = ({ children }) => {
     setWalletAddress(null);
     setIsAuthenticated(false);
     localStorage.removeItem("bcmrv_user");
-    window.location.href = "/login";
+    navigate("/", { replace: true });
+  };
+
+  const openLogin = () => {
+    setAuthModalMode("LOGIN");
+    setIsAuthModalOpen(true);
+  };
+
+  const openRegister = () => {
+    setAuthModalMode("REGISTER");
+    setIsAuthModalOpen(true);
+  };
+
+  const closeAuthModal = () => {
+    setIsAuthModalOpen(false);
   };
 
   const connectWallet = () => {
-
     const mockAddr = "0x7a3B" + Math.random().toString(16).slice(2, 38).toUpperCase();
     setWalletAddress(mockAddr);
     if (user) {
@@ -62,7 +78,9 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       isAuthenticated, user, role, walletAddress,
+      isAuthModalOpen, authModalMode,
       login, logout, connectWallet, disconnectWallet,
+      openLogin, openRegister, closeAuthModal, setAuthModalMode
     }}>
       {children}
     </AuthContext.Provider>
