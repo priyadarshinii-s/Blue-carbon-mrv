@@ -1,8 +1,9 @@
 import { useState } from "react";
-import StatusBadge from "../../components/shared/StatusBadge";
 import Timeline from "../../components/shared/Timeline";
 import CalculationPreview from "../../components/shared/CalculationPreview";
+import ReviewWizard from "../../components/shared/ReviewWizard";
 import TransactionModal from "../../components/common/TransactionModal";
+import ConfirmRejectModal from "../../components/common/ConfirmRejectModal";
 
 const mintQueue = [
   {
@@ -22,10 +23,18 @@ const mintQueue = [
   },
 ];
 
+const wizardSteps = [
+  { label: "Review Data" },
+  { label: "Carbon Preview" },
+  { label: "Decision" },
+];
+
 const MintApproval = () => {
   const [selectedItem, setSelectedItem] = useState(null);
   const [txModal, setTxModal] = useState({ open: false, status: "pending", txHash: "" });
   const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
 
   const handleMint = () => {
     setTxModal({ open: true, status: "pending", txHash: "" });
@@ -36,10 +45,25 @@ const MintApproval = () => {
   };
 
   const handleReject = () => {
-    if (!rejectReason) { alert("Please provide a rejection reason"); return; }
-    alert(`Rejected: ${selectedItem.project}\nReason: ${rejectReason}`);
+    if (!rejectReason) {
+      setRejectError("Please provide a rejection reason.");
+      return;
+    }
+    setRejectError("");
+    setRejectModalOpen(true);
+  };
+
+  const confirmReject = () => {
+    setRejectModalOpen(false);
     setRejectReason("");
+    setRejectError("");
     setSelectedItem(null);
+  };
+
+  const resetReview = () => {
+    setSelectedItem(null);
+    setRejectReason("");
+    setRejectError("");
   };
 
   const timelineSteps = [
@@ -51,7 +75,7 @@ const MintApproval = () => {
 
   return (
     <>
-      <h1>Mint Approval Queue</h1>
+      <h1 style={{paddingBottom: "0px", paddingTop: "5px"}}>Mint Approval Queue</h1>
 
       {!selectedItem ? (
         <table className="table" style={{ marginTop: "12px" }}>
@@ -85,46 +109,52 @@ const MintApproval = () => {
           </tbody>
         </table>
       ) : (
-        <div style={{ marginTop: "12px" }}>
-          <button className="secondary-btn" onClick={() => setSelectedItem(null)} style={{ marginBottom: "16px" }}>
-            Back to Queue
-          </button>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-
+        <>
+          <ReviewWizard steps={wizardSteps} onBack={resetReview}>
+            {/* ── Step 1: Review Data ── */}
             <div>
-              <div className="card">
-                <h3 style={{ fontSize: "16px", marginBottom: "12px" }}>{selectedItem.project}</h3>
-                <div style={{ fontSize: "14px", lineHeight: "2" }}>
-                  <div><strong>Field Officer:</strong> {selectedItem.fieldOfficer}</div>
-                  <div><strong>Validator:</strong> {selectedItem.validator}</div>
-                  <div><strong>Trees Verified:</strong> {selectedItem.trees}</div>
-                  <div><strong>Survival Rate:</strong> {selectedItem.survivalRate}%</div>
-                  <div><strong>CO₂ Estimated:</strong> {selectedItem.co2} tCO₂e</div>
-                  <div><strong>Verified Date:</strong> {selectedItem.verifiedDate}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div className="card">
+                  <h3 style={{ fontSize: "16px", marginBottom: "12px" }}>{selectedItem.project}</h3>
+                  <div style={{ fontSize: "14px", lineHeight: "2" }}>
+                    <div><strong>Field Officer:</strong> {selectedItem.fieldOfficer}</div>
+                    <div><strong>Validator:</strong> {selectedItem.validator}</div>
+                    <div><strong>Trees Verified:</strong> {selectedItem.trees}</div>
+                    <div><strong>Survival Rate:</strong> {selectedItem.survivalRate}%</div>
+                    <div><strong>CO₂ Estimated:</strong> {selectedItem.co2} tCO₂e</div>
+                    <div><strong>Verified Date:</strong> {selectedItem.verifiedDate}</div>
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h3 style={{ fontSize: "14px", marginBottom: "12px" }}>Submission Timeline</h3>
+                  <Timeline steps={timelineSteps} />
                 </div>
               </div>
-              <div className="mt-20">
+            </div>
+
+            {/* ── Step 2: Carbon Preview ── */}
+            <div>
+              <div style={{ maxWidth: "660px", margin: "0 auto" }}>
+                <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "16px", textAlign: "center" }}>
+                  Review the carbon calculation verified by the validator.
+                </p>
                 <CalculationPreview trees={selectedItem.trees} survivalRate={selectedItem.survivalRate} />
               </div>
             </div>
 
-
+            {/* ── Step 3: Decision ── */}
             <div>
-              <div className="card">
-                <h3 style={{ fontSize: "14px", marginBottom: "12px" }}>Submission Timeline</h3>
-                <Timeline steps={timelineSteps} />
-              </div>
-
-              <div className="card mt-20">
-                <h3 style={{ fontSize: "14px", marginBottom: "12px" }}>Decision</h3>
+              <div className="decision-section">
+                <h3>Admin Decision</h3>
                 <div className="form-group">
                   <label>Rejection Reason (required if rejecting)</label>
                   <textarea
                     placeholder="Provide reason for rejection"
                     value={rejectReason}
-                    onChange={(e) => setRejectReason(e.target.value)}
+                    onChange={(e) => { setRejectReason(e.target.value); setRejectError(""); }}
                   />
+                  {rejectError && <div className="inline-error">{rejectError}</div>}
                 </div>
 
                 <div className="action-btns">
@@ -137,8 +167,15 @@ const MintApproval = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </ReviewWizard>
+
+          <ConfirmRejectModal
+            isOpen={rejectModalOpen}
+            reason={rejectReason}
+            onClose={() => setRejectModalOpen(false)}
+            onConfirm={confirmReject}
+          />
+        </>
       )}
 
       <TransactionModal

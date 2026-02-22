@@ -1,8 +1,10 @@
 import { useState } from "react";
 import StatusBadge from "../../components/shared/StatusBadge";
 import MapComponent from "../../components/shared/MapComponent";
-import CalculationPreview from "../../components/shared/CalculationPreview";
+import CarbonCalculationForm from "../../components/shared/CarbonCalculationForm";
 import Timeline from "../../components/shared/Timeline";
+import ReviewWizard from "../../components/shared/ReviewWizard";
+import ConfirmRejectModal from "../../components/common/ConfirmRejectModal";
 
 const pendingQueue = [
   {
@@ -37,6 +39,12 @@ const pendingQueue = [
   },
 ];
 
+const wizardSteps = [
+  { label: "Review Data" },
+  { label: "Carbon Calculation" },
+  { label: "Decision" },
+];
+
 const VerificationQueue = () => {
   const [selected, setSelected] = useState(null);
   const [queue, setQueue] = useState(pendingQueue);
@@ -44,18 +52,42 @@ const VerificationQueue = () => {
   const [activePhoto, setActivePhoto] = useState(0);
   const [saving, setSaving] = useState(false);
   const [verdict, setVerdict] = useState(null);
+  const [commentError, setCommentError] = useState("");
+  const [calculationDone, setCalculationDone] = useState(false);
+  const [rejectModal, setRejectModal] = useState({ open: false, decision: null });
 
   const handleDecision = (decision) => {
     if ((decision === "rejected" || decision === "correction") && !comment) {
-      alert("Please add a comment explaining the rejection / correction needed.");
+      setCommentError("Please add a comment explaining the rejection / correction needed.");
       return;
     }
+    setCommentError("");
+
+    if (decision === "rejected" || decision === "correction") {
+      setRejectModal({ open: true, decision });
+      return;
+    }
+
+    executeDecision(decision);
+  };
+
+  const executeDecision = (decision) => {
     setSaving(true);
+    setRejectModal({ open: false, decision: null });
     setTimeout(() => {
       setQueue((prev) => prev.filter((q) => q.id !== selected.id));
       setVerdict(decision);
       setSaving(false);
     }, 1500);
+  };
+
+  const resetReview = () => {
+    setSelected(null);
+    setComment("");
+    setActivePhoto(0);
+    setCommentError("");
+    setVerdict(null);
+    setCalculationDone(false);
   };
 
   const timelineSteps = [
@@ -65,6 +97,7 @@ const VerificationQueue = () => {
     { title: "Mint Queue", description: "Awaiting admin mint approval (if approved)" },
   ];
 
+  /* ─── Verdict result screen ─── */
   if (verdict) {
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
@@ -87,7 +120,7 @@ const VerificationQueue = () => {
           </div>
         )}
         <div className="action-btns mt-20">
-          <button className="primary-btn" onClick={() => { setVerdict(null); setSelected(null); setComment(""); setActivePhoto(0); }}>
+          <button className="primary-btn" onClick={resetReview}>
             Back to Queue
           </button>
         </div>
@@ -95,117 +128,148 @@ const VerificationQueue = () => {
     );
   }
 
+  /* ─── Wizard review flow ─── */
   if (selected) {
     return (
       <>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "20px" }}>
-          <button className="secondary-btn" onClick={() => { setSelected(null); setComment(""); setActivePhoto(0); }}>
-            Back
-          </button>
-          <h1 style={{ margin: 0, fontSize: "20px" }}>Review: {selected.project}</h1>
-          <StatusBadge status="pending" />
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-
+        <ReviewWizard
+          steps={wizardSteps}
+          onBack={resetReview}
+          stepGates={[true, calculationDone, true]}
+        >
+          {/* ── Step 1: Review Data ── */}
           <div>
-            <div className="card">
-              <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>Submission Data</h3>
-              <div style={{ fontSize: "14px", lineHeight: "2.2" }}>
-                <div><strong>Officer:</strong> {selected.officer}</div>
-                <div><strong>Date:</strong> {selected.date}</div>
-                <div><strong>Trees Counted:</strong> {selected.trees}</div>
-                <div><strong>Survival Rate:</strong> {selected.survivalRate}%</div>
-                <div><strong>GPS:</strong> {selected.gpsLat}°N, {selected.gpsLng}°E</div>
-              </div>
-            </div>
-
-            <div className="card mt-20">
-              <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>Site Condition</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "13px" }}>
-                <div><strong>Vegetation:</strong> {selected.siteCondition.vegetationDensity}</div>
-                <div><strong>Salinity:</strong> {selected.siteCondition.salinity} ppt</div>
-                <div><strong>pH:</strong> {selected.siteCondition.pH}</div>
-                <div><strong>Flooding:</strong> {selected.siteCondition.floodingLevel}</div>
-              </div>
-            </div>
-
-            <div className="card mt-20">
-              <h3 style={{ fontSize: "14px", marginBottom: "8px" }}>Activities Completed</h3>
-              <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                {selected.activities.map((a) => (
-                  <span key={a} style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", padding: "3px 10px", borderRadius: "12px", fontSize: "12px" }}>
-                    {a}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="card mt-20">
-              <h3 style={{ fontSize: "14px", marginBottom: "8px" }}>Field Notes</h3>
-              <p style={{ fontSize: "13px", color: "#374151" }}>{selected.fieldNotes}</p>
-            </div>
-
-            <div className="mt-20">
-              <CalculationPreview trees={selected.trees} survivalRate={selected.survivalRate} />
-            </div>
-          </div>
-
-
-          <div>
-            <div className="card">
-              <h3 style={{ fontSize: "14px", marginBottom: "10px" }}>GPS Location</h3>
-              <MapComponent pins={[{ lat: selected.gpsLat, lng: selected.gpsLng }]} height="200px" />
-            </div>
-
-            <div className="card mt-20">
-              <h3 style={{ fontSize: "14px", marginBottom: "10px" }}>
-                Photo Evidence ({selected.photos.length} files)
-              </h3>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
-                {selected.photos.map((photo, i) => (
-                  <div
-                    key={i}
-                    onClick={() => setActivePhoto(i)}
-                    style={{
-                      padding: "6px 10px", fontSize: "12px",
-                      background: activePhoto === i ? "#0f2a44" : "#f3f4f6",
-                      color: activePhoto === i ? "white" : "#374151",
-                      borderRadius: "6px", cursor: "pointer",
-                    }}
-                  >
-                    {photo}
+            {/* Summary header card */}
+            <div className="card" style={{ marginBottom: "20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div>
+                  <h3 style={{ fontSize: "16px", marginBottom: "8px" }}>{selected.project}</h3>
+                  <div style={{ fontSize: "13px", color: "#6b7280" }}>
+                    Submitted by <strong>{selected.officer}</strong> on {selected.date}
                   </div>
-                ))}
+                </div>
+                <StatusBadge status="pending" />
               </div>
-              <div style={{
-                height: "140px", background: "#f3f4f6", borderRadius: "6px",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: "13px", color: "#6b7280",
-              }}>
-                <div style={{ textAlign: "center" }}>
-                  <div>{selected.photos[activePhoto]}</div>
-                  <div style={{ fontSize: "11px", marginTop: "4px" }}>IPFS: {selected.ipfsHashes[activePhoto]}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginTop: "16px", padding: "12px", background: "var(--bg)", borderRadius: "8px" }}>
+                <div>
+                  <div style={{ fontSize: "11px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Trees</div>
+                  <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text)" }}>{selected.trees}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "11px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Survival</div>
+                  <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text)" }}>{selected.survivalRate}%</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "11px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Latitude</div>
+                  <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text)" }}>{selected.gpsLat}°N</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: "11px", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.05em" }}>Longitude</div>
+                  <div style={{ fontSize: "18px", fontWeight: 700, color: "var(--text)" }}>{selected.gpsLng}°E</div>
                 </div>
               </div>
             </div>
 
-            <div className="card mt-20">
+            {/* Two-column detail grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+              <div>
+                <div className="card" style={{ marginBottom: "16px" }}>
+                  <h3 style={{ fontSize: "14px", marginBottom: "10px" }}>Site Condition</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "13px" }}>
+                    <div><strong>Vegetation:</strong> {selected.siteCondition.vegetationDensity}</div>
+                    <div><strong>Salinity:</strong> {selected.siteCondition.salinity} ppt</div>
+                    <div><strong>pH:</strong> {selected.siteCondition.pH}</div>
+                    <div><strong>Flooding:</strong> {selected.siteCondition.floodingLevel}</div>
+                  </div>
+                </div>
+
+                <div className="card" style={{ marginBottom: "16px" }}>
+                  <h3 style={{ fontSize: "14px", marginBottom: "8px" }}>Activities Completed</h3>
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                    {selected.activities.map((a) => (
+                      <span key={a} style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", padding: "3px 10px", borderRadius: "12px", fontSize: "12px" }}>
+                        {a}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="card">
+                  <h3 style={{ fontSize: "14px", marginBottom: "8px" }}>Field Notes</h3>
+                  <p style={{ fontSize: "13px", color: "#374151", margin: 0 }}>{selected.fieldNotes}</p>
+                </div>
+              </div>
+
+              <div>
+                <div className="card" style={{ marginBottom: "16px" }}>
+                  <h3 style={{ fontSize: "14px", marginBottom: "10px" }}>GPS Location</h3>
+                  <MapComponent pins={[{ lat: selected.gpsLat, lng: selected.gpsLng }]} height="180px" />
+                </div>
+
+                <div className="card">
+                  <h3 style={{ fontSize: "14px", marginBottom: "10px" }}>
+                    Photo Evidence ({selected.photos.length} files)
+                  </h3>
+                  <div style={{ display: "flex", gap: "6px", marginBottom: "10px", flexWrap: "wrap" }}>
+                    {selected.photos.map((photo, i) => (
+                      <div
+                        key={i}
+                        onClick={() => setActivePhoto(i)}
+                        style={{
+                          padding: "5px 10px", fontSize: "11px",
+                          background: activePhoto === i ? "#0f766e" : "#f3f4f6",
+                          color: activePhoto === i ? "white" : "#374151",
+                          borderRadius: "6px", cursor: "pointer", transition: "all 0.15s",
+                        }}
+                      >
+                        {photo}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{
+                    height: "120px", background: "#f3f4f6", borderRadius: "6px",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "13px", color: "#6b7280",
+                  }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div>{selected.photos[activePhoto]}</div>
+                      <div style={{ fontSize: "11px", marginTop: "4px" }}>IPFS: {selected.ipfsHashes[activePhoto]}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Timeline — full width */}
+            <div className="card">
               <h3 style={{ fontSize: "14px", marginBottom: "12px" }}>Process Timeline</h3>
               <Timeline steps={timelineSteps} />
             </div>
+          </div>
 
+          {/* ── Step 2: Carbon Calculation ── */}
+          <div>
+            <div style={{ maxWidth: "660px", margin: "0 auto" }}>
+              <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "16px", textAlign: "center" }}>
+                Enter the verified field data below to calculate the estimated carbon sequestration.
+              </p>
+              <CarbonCalculationForm onResult={(r) => setCalculationDone(!!r)} />
+            </div>
+          </div>
 
-            <div className="card mt-20">
-              <h3 style={{ fontSize: "14px", marginBottom: "12px" }}>Validator Decision</h3>
+          {/* ── Step 3: Decision ── */}
+          <div>
+            <div className="decision-section">
+              <h3>Validator Decision</h3>
               <div className="form-group">
                 <label>Comments / Reason</label>
                 <textarea
                   placeholder="Required for rejection/correction. Optional for approval."
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
+                  onChange={(e) => { setComment(e.target.value); setCommentError(""); }}
                   rows={3}
                 />
+                {commentError && <div className="inline-error">{commentError}</div>}
               </div>
 
               <div className="action-btns">
@@ -221,11 +285,19 @@ const VerificationQueue = () => {
               </div>
             </div>
           </div>
-        </div>
+        </ReviewWizard>
+
+        <ConfirmRejectModal
+          isOpen={rejectModal.open}
+          reason={comment}
+          onClose={() => setRejectModal({ open: false, decision: null })}
+          onConfirm={() => executeDecision(rejectModal.decision)}
+        />
       </>
     );
   }
 
+  /* ─── Queue table ─── */
   return (
     <>
       <h1>Verification Queue</h1>

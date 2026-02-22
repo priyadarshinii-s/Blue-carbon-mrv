@@ -9,6 +9,7 @@ const adminMenuItems = [
   { path: "/admin/approvals", label: "Mint Approvals", icon: "💎" },
   { path: "/admin/reports", label: "Reports & Exports", icon: "📑" },
   { path: "/admin/audit", label: "Audit Log", icon: "🔍" },
+  { path: "/admin/settings/formula", label: "Formula Settings", icon: "⚙️" },
 ];
 
 const AdminLayout = () => {

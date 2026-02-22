@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import { useEffect } from "react";
+import { CalculationProvider } from "./context/CalculationContext";
+
 
 import Landing from "./pages/Landing";
 import Unauthorized from "./pages/Unauthorized";
@@ -25,17 +27,19 @@ const RoleRedirect = () => {
 const App = () => {
     return (
         <>
-            <AuthModal />
-            <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/unauthorized" element={<Unauthorized />} />
-                <Route path="/dashboard" element={<RoleRedirect />} />
-                {AdminRoutes()}
-                {FieldRoutes()}
-                {ValidatorRoutes()}
-                {ViewerRoutes()}
-                <Route path="*" element={<NotFound />} />
-            </Routes>
+            <CalculationProvider>
+                <AuthModal />
+                <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/unauthorized" element={<Unauthorized />} />
+                    <Route path="/dashboard" element={<RoleRedirect />} />
+                    {AdminRoutes()}
+                    {FieldRoutes()}
+                    {ValidatorRoutes()}
+                    {ViewerRoutes()}
+                    <Route path="*" element={<NotFound />} />
+                </Routes>
+            </CalculationProvider>
         </>
     );
 };

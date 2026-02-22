@@ -1,6 +1,8 @@
+import { useCalculation } from "../../context/CalculationContext";
+
 const CalculationPreview = ({ trees = 0, survivalRate = 85 }) => {
+    const { co2PerTree } = useCalculation();
     const survivingTrees = Math.round(trees * (survivalRate / 100));
-    const co2PerTree = 0.024;
     const totalCO2 = (survivingTrees * co2PerTree).toFixed(2);
 
     return (

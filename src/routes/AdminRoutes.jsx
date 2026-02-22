@@ -8,6 +8,8 @@ import CreateProject from "../pages/admin/CreateProject";
 import MintApproval from "../pages/admin/MintApproval";
 import Reports from "../pages/admin/Reports";
 import AuditLog from "../pages/admin/AuditLog";
+import FormulaSettings from "../pages/admin/FormulaSettings";
+
 
 const AdminRoutes = () => (
   <Route
@@ -26,6 +28,7 @@ const AdminRoutes = () => (
     <Route path="approvals" element={<MintApproval />} />
     <Route path="reports" element={<Reports />} />
     <Route path="audit" element={<AuditLog />} />
+    <Route path="settings/formula" element={<FormulaSettings />} />
   </Route>
 );
 
