@@ -1,10 +1,5 @@
 import { useState } from "react";
 
-/**
- * ReviewWizard
- * steps: [{ label: string }]
- * stepGates: optional array of booleans — stepGates[i] === false blocks Next on step i
- */
 const ReviewWizard = ({ steps = [], children, onBack, stepGates = [] }) => {
     const [current, setCurrent] = useState(0);
     const panels = Array.isArray(children) ? children : [children];
@@ -12,7 +7,7 @@ const ReviewWizard = ({ steps = [], children, onBack, stepGates = [] }) => {
 
     return (
         <div className="wizard-container">
-            {/* Back link */}
+            {}
             {onBack && (
                 <div style={{ marginBottom: "16px" }}>
                     <button
@@ -31,7 +26,7 @@ const ReviewWizard = ({ steps = [], children, onBack, stepGates = [] }) => {
                 </div>
             )}
 
-            {/* Stepper bar */}
+            {}
             <div className="wizard-stepper-card">
                 <div className="wizard-stepper">
                     {steps.map((step, i) => (
@@ -60,12 +55,12 @@ const ReviewWizard = ({ steps = [], children, onBack, stepGates = [] }) => {
                 </div>
             </div>
 
-            {/* Step content */}
+            {}
             <div className="wizard-content" key={current}>
                 {panels[current]}
             </div>
 
-            {/* Navigation */}
+            {}
             <div className="wizard-nav">
                 {current > 0 ? (
                     <button

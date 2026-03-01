@@ -18,7 +18,6 @@ const MapComponent = ({ pins = [], height = "240px", editable = false, showPolyg
                 backgroundSize: "40px 40px",
             }} />
 
-
             {showPolygon && (
                 <div style={{
                     position: "absolute",
@@ -28,7 +27,6 @@ const MapComponent = ({ pins = [], height = "240px", editable = false, showPolyg
                     borderRadius: "4px",
                 }} />
             )}
-
 
             {pins.map((pin, i) => (
                 <div key={i} style={{
@@ -42,7 +40,6 @@ const MapComponent = ({ pins = [], height = "240px", editable = false, showPolyg
                     📍
                 </div>
             ))}
-
 
             <div style={{ position: "relative", zIndex: 1, textAlign: "center", color: "#6b7280" }}>
                 <div style={{ fontSize: "24px" }}>🗺️</div>

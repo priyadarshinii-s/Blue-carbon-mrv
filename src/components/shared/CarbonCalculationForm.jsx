@@ -1,10 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCalculation } from "../../context/CalculationContext";
 
-/**
- * CarbonCalculationForm
- * onResult(result | null): called when a result is computed or inputs are cleared
- */
 const CarbonCalculationForm = ({ onResult }) => {
     const { co2PerTree: defaultCo2 } = useCalculation();
     const [trees, setTrees] = useState("");
@@ -12,7 +8,6 @@ const CarbonCalculationForm = ({ onResult }) => {
     const [co2PerTree, setCo2PerTree] = useState(defaultCo2.toString());
     const [result, setResult] = useState(null);
 
-    // Update local state if default changes (e.g. admin updates formula)
     useEffect(() => {
         setCo2PerTree(defaultCo2.toString());
     }, [defaultCo2]);

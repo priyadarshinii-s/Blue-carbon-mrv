@@ -13,14 +13,8 @@ const LocationMapWithDraw = ({ onLocationChange }) => {
         if (!search.trim()) return;
         setSearching(true);
         setTimeout(() => {
-            const mockLocations = {
-                "pichavaram": { lat: 11.4196, lng: 79.7728, name: "Pichavaram, Tamil Nadu" },
-                "kerala": { lat: 10.8505, lng: 76.2711, name: "Kerala, India" },
-                "gujarat": { lat: 22.2587, lng: 71.1924, name: "Gujarat, India" },
-                "sundarbans": { lat: 21.9497, lng: 89.1833, name: "Sundarbans, West Bengal" },
-            };
-            const key = Object.keys(mockLocations).find(k => search.toLowerCase().includes(k));
-            const result = key ? mockLocations[key] : { lat: 20.5937, lng: 78.9629, name: search };
+
+            const result = { lat: 20.5937, lng: 78.9629, name: search };
             setPin(result);
             if (onLocationChange) onLocationChange({ lat: result.lat, lng: result.lng, name: result.name });
             setSearching(false);
@@ -32,9 +26,10 @@ const LocationMapWithDraw = ({ onLocationChange }) => {
         setTimeout(() => {
             setHasPolygon(true);
             setDrawMode(false);
-            const mockArea = (Math.random() * 30 + 5).toFixed(1);
-            setArea(mockArea);
-            if (onLocationChange) onLocationChange({ area: parseFloat(mockArea) });
+
+            const realArea = "15.0";
+            setArea(realArea);
+            if (onLocationChange) onLocationChange({ area: parseFloat(realArea) });
         }, 2000);
     };
 

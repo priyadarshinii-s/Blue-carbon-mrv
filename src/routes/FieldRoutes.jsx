@@ -10,7 +10,7 @@ const FieldRoutes = () => (
   <Route
     path="/field"
     element={
-      <ProtectedRoute allowedRoles={["FIELD", "ADMIN"]}>
+      <ProtectedRoute allowedRoles={["FIELD_OFFICER", "ADMIN"]}>
         <FieldOfficerLayout />
       </ProtectedRoute>
     }

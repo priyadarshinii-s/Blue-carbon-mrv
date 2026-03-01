@@ -1,43 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StatusBadge from "../../components/shared/StatusBadge";
 import MapComponent from "../../components/shared/MapComponent";
 import CarbonCalculationForm from "../../components/shared/CarbonCalculationForm";
 import Timeline from "../../components/shared/Timeline";
 import ReviewWizard from "../../components/shared/ReviewWizard";
 import ConfirmRejectModal from "../../components/common/ConfirmRejectModal";
+import { verificationsAPI } from "../../services/api";
 
-const pendingQueue = [
-  {
-    id: 1, project: "Mangrove Restoration – TN", officer: "Arun Kumar",
-    date: "21 Feb 2026", trees: 350, survivalRate: 85, gpsLat: 11.127, gpsLng: 78.656,
-    siteCondition: { vegetationDensity: "dense", salinity: "28", pH: "7.2", floodingLevel: "moderate" },
-    activities: ["Sapling Planting", "Fencing & Protection"],
-    fieldNotes: "Good rains this month. Most saplings have taken root well. Some goat intrusion near north boundary.",
-    photos: ["Photo_001.jpg", "Photo_002.jpg", "Photo_003.jpg", "Photo_004.jpg"],
-    ipfsHashes: ["QmX1abc...", "QmX2def...", "QmX3ghi...", "QmX4jkl..."],
-    submittedAt: "2026-02-21",
-  },
-  {
-    id: 2, project: "Seagrass Revival – Kerala", officer: "Lakshmi Nair",
-    date: "20 Feb 2026", trees: 180, survivalRate: 72, gpsLat: 10.85, gpsLng: 76.271,
-    siteCondition: { vegetationDensity: "moderate", salinity: "32", pH: "8.1", floodingLevel: "high" },
-    activities: ["Seedling Distribution", "Biodiversity Survey"],
-    fieldNotes: "Tidal conditions were challenging. Lower survival rate due to storm last week.",
-    photos: ["Photo_001.jpg", "Photo_002.jpg", "Photo_003.jpg"],
-    ipfsHashes: ["QmY1abc...", "QmY2def...", "QmY3ghi..."],
-    submittedAt: "2026-02-20",
-  },
-  {
-    id: 3, project: "Saltmarsh Recovery – Gujarat", officer: "Vikram Singh",
-    date: "19 Feb 2026", trees: 500, survivalRate: 90, gpsLat: 21.17, gpsLng: 72.831,
-    siteCondition: { vegetationDensity: "dense", salinity: "24", pH: "6.8", floodingLevel: "low" },
-    activities: ["Sapling Planting", "Community Training", "Soil Sampling"],
-    fieldNotes: "Excellent conditions. New community members joined training session.",
-    photos: ["Photo_001.jpg", "Photo_002.jpg", "Photo_003.jpg", "Photo_004.jpg", "Photo_005.jpg"],
-    ipfsHashes: ["QmZ1abc...", "QmZ2def...", "QmZ3ghi...", "QmZ4jkl...", "QmZ5mno..."],
-    submittedAt: "2026-02-19",
-  },
-];
+
+
 
 const wizardSteps = [
   { label: "Review Data" },
@@ -47,7 +18,8 @@ const wizardSteps = [
 
 const VerificationQueue = () => {
   const [selected, setSelected] = useState(null);
-  const [queue, setQueue] = useState(pendingQueue);
+  const [queue, setQueue] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [comment, setComment] = useState("");
   const [activePhoto, setActivePhoto] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -56,7 +28,35 @@ const VerificationQueue = () => {
   const [calculationDone, setCalculationDone] = useState(false);
   const [rejectModal, setRejectModal] = useState({ open: false, decision: null });
 
-  const handleDecision = (decision) => {
+  useEffect(() => {
+    verificationsAPI.getQueue()
+      .then((res) => {
+        const data = res.data.data.submissions || [];
+
+        const mapped = data.map((s) => ({
+          id: s._id || s.submissionId,
+          submissionId: s.submissionId || s._id,
+          project: s.projectId,
+          officer: s.fieldOfficerWallet,
+          date: s.visitDate ? new Date(s.visitDate).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "–",
+          trees: s.survivingTrees,
+          survivalRate: s.survivalRate,
+          gpsLat: s.gps?.lat,
+          gpsLng: s.gps?.lng,
+          siteCondition: s.siteCondition || {},
+          activities: s.restorationLog?.activities || [],
+          fieldNotes: s.restorationLog?.notes || "",
+          photos: s.currentPhotos || [],
+          ipfsHashes: s.currentPhotos || [],
+          submittedAt: s.createdAt,
+        }));
+        setQueue(mapped);
+      })
+      .catch(() => setQueue([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDecision = async (decision) => {
     if ((decision === "rejected" || decision === "correction") && !comment) {
       setCommentError("Please add a comment explaining the rejection / correction needed.");
       return;
@@ -68,17 +68,28 @@ const VerificationQueue = () => {
       return;
     }
 
-    executeDecision(decision);
+    await executeDecision(decision);
   };
 
-  const executeDecision = (decision) => {
+  const executeDecision = async (decision) => {
     setSaving(true);
     setRejectModal({ open: false, decision: null });
-    setTimeout(() => {
-      setQueue((prev) => prev.filter((q) => q.id !== selected.id));
-      setVerdict(decision);
-      setSaving(false);
-    }, 1500);
+
+    const statusMap = { approved: "Approved", rejected: "Rejected", correction: "NeedsCorrection" };
+
+    try {
+      await verificationsAPI.review(selected.submissionId, {
+        status: statusMap[decision] || decision,
+        remarks: comment,
+        approvedCredits: decision === "approved" ? selected.trees * 0.03 : 0,
+      });
+    } catch {
+
+    }
+
+    setQueue((prev) => prev.filter((q) => q.id !== selected.id));
+    setVerdict(decision);
+    setSaving(false);
   };
 
   const resetReview = () => {
@@ -97,7 +108,8 @@ const VerificationQueue = () => {
     { title: "Mint Queue", description: "Awaiting admin mint approval (if approved)" },
   ];
 
-  /* ─── Verdict result screen ─── */
+  if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Loading queue…</div>;
+
   if (verdict) {
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
@@ -128,7 +140,6 @@ const VerificationQueue = () => {
     );
   }
 
-  /* ─── Wizard review flow ─── */
   if (selected) {
     return (
       <>
@@ -137,9 +148,8 @@ const VerificationQueue = () => {
           onBack={resetReview}
           stepGates={[true, calculationDone, true]}
         >
-          {/* ── Step 1: Review Data ── */}
+          { }
           <div>
-            {/* Summary header card */}
             <div className="card" style={{ marginBottom: "20px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div>
@@ -170,23 +180,22 @@ const VerificationQueue = () => {
               </div>
             </div>
 
-            {/* Two-column detail grid */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
               <div>
                 <div className="card" style={{ marginBottom: "16px" }}>
                   <h3 style={{ fontSize: "14px", marginBottom: "10px" }}>Site Condition</h3>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "13px" }}>
-                    <div><strong>Vegetation:</strong> {selected.siteCondition.vegetationDensity}</div>
-                    <div><strong>Salinity:</strong> {selected.siteCondition.salinity} ppt</div>
-                    <div><strong>pH:</strong> {selected.siteCondition.pH}</div>
-                    <div><strong>Flooding:</strong> {selected.siteCondition.floodingLevel}</div>
+                    <div><strong>Vegetation:</strong> {selected.siteCondition.vegetationDensity || "–"}</div>
+                    <div><strong>Salinity:</strong> {selected.siteCondition.salinity || "–"} ppt</div>
+                    <div><strong>pH:</strong> {selected.siteCondition.pH || "–"}</div>
+                    <div><strong>Flooding:</strong> {selected.siteCondition.floodingLevel || "–"}</div>
                   </div>
                 </div>
 
                 <div className="card" style={{ marginBottom: "16px" }}>
                   <h3 style={{ fontSize: "14px", marginBottom: "8px" }}>Activities Completed</h3>
                   <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
-                    {selected.activities.map((a) => (
+                    {(selected.activities || []).map((a) => (
                       <span key={a} style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", padding: "3px 10px", borderRadius: "12px", fontSize: "12px" }}>
                         {a}
                       </span>
@@ -196,7 +205,7 @@ const VerificationQueue = () => {
 
                 <div className="card">
                   <h3 style={{ fontSize: "14px", marginBottom: "8px" }}>Field Notes</h3>
-                  <p style={{ fontSize: "13px", color: "#374151", margin: 0 }}>{selected.fieldNotes}</p>
+                  <p style={{ fontSize: "13px", color: "#374151", margin: 0 }}>{selected.fieldNotes || "No notes"}</p>
                 </div>
               </div>
 
@@ -222,7 +231,7 @@ const VerificationQueue = () => {
                           borderRadius: "6px", cursor: "pointer", transition: "all 0.15s",
                         }}
                       >
-                        {photo}
+                        {typeof photo === "string" ? photo : `Photo ${i + 1}`}
                       </div>
                     ))}
                   </div>
@@ -240,14 +249,13 @@ const VerificationQueue = () => {
               </div>
             </div>
 
-            {/* Timeline — full width */}
             <div className="card">
               <h3 style={{ fontSize: "14px", marginBottom: "12px" }}>Process Timeline</h3>
               <Timeline steps={timelineSteps} />
             </div>
           </div>
 
-          {/* ── Step 2: Carbon Calculation ── */}
+          { }
           <div>
             <div style={{ maxWidth: "660px", margin: "0 auto" }}>
               <p style={{ fontSize: "14px", color: "#6b7280", marginBottom: "16px", textAlign: "center" }}>
@@ -257,7 +265,7 @@ const VerificationQueue = () => {
             </div>
           </div>
 
-          {/* ── Step 3: Decision ── */}
+          { }
           <div>
             <div className="decision-section">
               <h3>Validator Decision</h3>
@@ -297,7 +305,6 @@ const VerificationQueue = () => {
     );
   }
 
-  /* ─── Queue table ─── */
   return (
     <>
       <h1>Verification Queue</h1>

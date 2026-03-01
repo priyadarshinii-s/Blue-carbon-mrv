@@ -10,7 +10,6 @@ import Reports from "../pages/admin/Reports";
 import AuditLog from "../pages/admin/AuditLog";
 import FormulaSettings from "../pages/admin/FormulaSettings";
 
-
 const AdminRoutes = () => (
   <Route
     path="/admin"

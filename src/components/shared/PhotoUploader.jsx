@@ -27,7 +27,6 @@ const PhotoUploader = ({ maxFiles = 5, label = "Upload Photos", onFilesChange })
         <div>
             {label && <label style={{ display: "block", fontWeight: 500, fontSize: "13px", marginBottom: "6px" }}>{label}</label>}
 
-
             <div
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -60,7 +59,6 @@ const PhotoUploader = ({ maxFiles = 5, label = "Upload Photos", onFilesChange })
                 style={{ display: "none" }}
                 onChange={(e) => addFiles(e.target.files)}
             />
-
 
             {files.length > 0 && (
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "10px" }}>

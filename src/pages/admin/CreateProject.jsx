@@ -5,14 +5,13 @@ import EcosystemTypeCards from "../../components/shared/EcosystemTypeCards";
 import LocationMapWithDraw from "../../components/shared/LocationMapWithDraw";
 import PhotoUploader from "../../components/shared/PhotoUploader";
 import DraftRecoveryBanner from "../../components/shared/DraftRecoveryBanner";
+import { adminAPI, projectsAPI } from "../../services/api";
 import ConfirmationTxModal from "../../components/shared/ConfirmationTxModal";
 import ProjectSuccessScreen from "../../components/shared/ProjectSuccessScreen";
 
 const DRAFT_KEY = "admin_project_draft";
 const STEPS = ["Basic Details", "Location", "Evidence", "Timeline", "Admin Settings"];
 
-const allOfficers = ["Arun Kumar", "Priya Devi", "Vikram Singh", "Lakshmi Nair", "Amit Das", "Ravi Kumar"];
-const allValidators = ["Priya Sharma", "Suresh Menon", "Kavita Reddy"];
 const activityOptions = [
   "Sapling Planting", "Seedling Distribution", "Hydrological Restoration", "Soil Sampling",
   "Community Training", "Nursery Maintenance", "Fencing & Protection", "Biodiversity Survey",
@@ -41,6 +40,18 @@ const CreateProject = () => {
   const [uploadProgress, setUploadProgress] = useState({});
   const [success, setSuccess] = useState(null);
   const draftTimer = useRef(null);
+  const [allOfficers, setAllOfficers] = useState([]);
+  const [allValidators, setAllValidators] = useState([]);
+
+  useEffect(() => {
+    adminAPI.getUsers()
+      .then(res => {
+        const users = res.data.data.users || [];
+        setAllOfficers(users.filter(u => u.role === "FIELD_OFFICER").map(u => ({ wallet: u.walletAddress, name: u.userName || u.walletAddress })));
+        setAllValidators(users.filter(u => u.role === "VALIDATOR").map(u => ({ wallet: u.walletAddress, name: u.userName || u.walletAddress })));
+      })
+      .catch(() => { });
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem(DRAFT_KEY);
@@ -77,15 +88,15 @@ const CreateProject = () => {
       ? form.activities.filter((x) => x !== a)
       : [...form.activities, a]);
 
-  const toggleOfficer = (o) =>
-    set("assignedOfficers", form.assignedOfficers.includes(o)
-      ? form.assignedOfficers.filter((x) => x !== o)
-      : [...form.assignedOfficers, o]);
+  const toggleOfficer = (wallet) =>
+    set("assignedOfficers", form.assignedOfficers.includes(wallet)
+      ? form.assignedOfficers.filter((x) => x !== wallet)
+      : [...form.assignedOfficers, wallet]);
 
-  const toggleValidator = (v) =>
-    set("assignedValidators", form.assignedValidators.includes(v)
-      ? form.assignedValidators.filter((x) => x !== v)
-      : [...form.assignedValidators, v]);
+  const toggleValidator = (wallet) =>
+    set("assignedValidators", form.assignedValidators.includes(wallet)
+      ? form.assignedValidators.filter((x) => x !== wallet)
+      : [...form.assignedValidators, wallet]);
 
   const simulateIPFSUpload = (files) => {
     files.forEach((f, i) => {
@@ -140,16 +151,41 @@ const CreateProject = () => {
     setShowConfirmModal(true);
   };
 
-  const handleConfirmSubmit = () => {
+  const handleConfirmSubmit = async () => {
     setSubmitting(true);
     setShowConfirmModal(false);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      const payload = {
+        projectName: form.name,
+        projectType: form.ecosystemType,
+        description: form.description,
+        location: form.location,
+        approximateAreaHa: parseFloat(form.area) || 0,
+        ecosystemTypes: [form.ecosystemType],
+        plannedActivities: form.activities,
+        startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,
+        endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
+        status: form.initialStatus,
+        assignedFieldOfficer: form.assignedOfficers[0] || undefined,
+        assignedValidator: form.assignedValidators[0] || undefined,
+      };
+
+      const res = await projectsAPI.create(payload);
+      const project = res.data.data.project;
+
       localStorage.removeItem(DRAFT_KEY);
-      const id = "NCCR-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-      const tx = "0x" + Math.random().toString(16).slice(2, 42);
-      setSuccess({ id, tx, name: form.name });
-    }, 3000);
+      setSuccess({
+        id: project.projectId,
+        tx: project.blockchainProjectHash || "Pending",
+        name: project.projectName,
+      });
+    } catch (err) {
+      console.error("Project creation failed:", err);
+      const msg = err.response?.data?.message || "Failed to create project. Please try again.";
+      alert(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (success) {
@@ -361,12 +397,12 @@ const CreateProject = () => {
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "6px" }}>
                 {allOfficers.map((o) => (
                   <button
-                    key={o} type="button"
-                    className={form.assignedOfficers.includes(o) ? "primary-btn" : "secondary-btn"}
+                    key={o.wallet} type="button"
+                    className={form.assignedOfficers.includes(o.wallet) ? "primary-btn" : "secondary-btn"}
                     style={{ fontSize: "12px", padding: "6px 12px" }}
-                    onClick={() => toggleOfficer(o)}
+                    onClick={() => toggleOfficer(o.wallet)}
                   >
-                    {o}
+                    {o.name}
                   </button>
                 ))}
               </div>
@@ -377,12 +413,12 @@ const CreateProject = () => {
               <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "6px" }}>
                 {allValidators.map((v) => (
                   <button
-                    key={v} type="button"
-                    className={form.assignedValidators.includes(v) ? "primary-btn" : "secondary-btn"}
+                    key={v.wallet} type="button"
+                    className={form.assignedValidators.includes(v.wallet) ? "primary-btn" : "secondary-btn"}
                     style={{ fontSize: "12px", padding: "6px 12px" }}
-                    onClick={() => toggleValidator(v)}
+                    onClick={() => toggleValidator(v.wallet)}
                   >
-                    {v}
+                    {v.name}
                   </button>
                 ))}
               </div>

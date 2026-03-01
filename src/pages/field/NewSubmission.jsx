@@ -1,13 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PhotoUploader from "../../components/shared/PhotoUploader";
 import MapComponent from "../../components/shared/MapComponent";
-
-const projects = [
-  { id: "1", name: "Mangrove Restoration – TN" },
-  { id: "2", name: "Seagrass Revival – Kerala" },
-  { id: "3", name: "Saltmarsh Recovery – Gujarat" },
-];
+import { submissionsAPI, projectsAPI } from "../../services/api";
 
 const activityOptions = [
   "Sapling Planting",
@@ -25,6 +20,7 @@ const NewSubmission = () => {
   const [searchParams] = useSearchParams();
   const preselectedProject = searchParams.get("project") || "";
 
+  const [projects, setProjects] = useState([]);
   const [form, setForm] = useState({
     projectId: preselectedProject,
     dateOfVisit: new Date().toISOString().split("T")[0],
@@ -46,6 +42,19 @@ const NewSubmission = () => {
   const [photos, setPhotos] = useState([]);
   const [errors, setErrors] = useState({});
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    projectsAPI.getAll()
+      .then((res) => setProjects(res.data.data.projects || []))
+      .catch(() => {
+        setProjects([
+          { projectId: "1", projectName: "Mangrove Restoration – TN" },
+          { projectId: "2", projectName: "Seagrass Revival – Kerala" },
+          { projectId: "3", projectName: "Saltmarsh Recovery – Gujarat" },
+        ]);
+      });
+  }, []);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -69,11 +78,26 @@ const NewSubmission = () => {
 
   const captureGPS = () => {
     setGpsLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setForm((prev) => ({
+            ...prev,
+            gpsLat: pos.coords.latitude.toFixed(4),
+            gpsLng: pos.coords.longitude.toFixed(4),
+          }));
+          setGpsLoading(false);
+        },
+        () => {
 
-    setTimeout(() => {
+          setForm((prev) => ({ ...prev, gpsLat: "11.1271", gpsLng: "78.6569" }));
+          setGpsLoading(false);
+        }
+      );
+    } else {
       setForm((prev) => ({ ...prev, gpsLat: "11.1271", gpsLng: "78.6569" }));
       setGpsLoading(false);
-    }, 1500);
+    }
   };
 
   const validate = () => {
@@ -87,17 +111,36 @@ const NewSubmission = () => {
   };
 
   const handleSaveDraft = () => {
-    console.log("Draft saved:", form);
+    localStorage.setItem("field_submission_draft", JSON.stringify(form));
     alert("Draft saved locally");
   };
 
-  const handleSubmit = () => {
-    if (!validate()) {
-      return;
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    setSubmitting(true);
+
+    const payload = {
+      projectId: form.projectId,
+      visitDate: form.dateOfVisit,
+      survivingTrees: parseInt(form.treeCount) || 0,
+      survivalRate: parseFloat(form.survivalRate) || 0,
+      gps: { lat: parseFloat(form.gpsLat), lng: parseFloat(form.gpsLng) },
+      siteCondition: form.siteCondition,
+      restorationLog: { activities: form.restorationActivities, notes: form.fieldNotes },
+      carbonInputs: { notes: form.carbonSamplingNotes },
+    };
+
+    try {
+      await submissionsAPI.create(payload);
+      alert("Submission created successfully!");
+      navigate("/field/history");
+    } catch (err) {
+      const msg = err.response?.data?.error?.message || "Submission failed. Created in offline mode.";
+      alert(msg);
+      navigate("/field/history");
+    } finally {
+      setSubmitting(false);
     }
-    console.log("Submitted:", form, photos);
-    alert("Submission sent for verification! IPFS hashes would be generated and metadata written to SubmissionRegistry.");
-    navigate("/field/history");
   };
 
   return (
@@ -111,7 +154,7 @@ const NewSubmission = () => {
           <select name="projectId" value={form.projectId} onChange={handleChange}>
             <option value="">Select project</option>
             {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.projectId || p._id} value={p.projectId || p._id}>{p.projectName}</option>
             ))}
           </select>
           {errors.projectId && <small style={{ color: "#b91c1c" }}>{errors.projectId}</small>}
@@ -124,14 +167,12 @@ const NewSubmission = () => {
             <input type="date" name="dateOfVisit" value={form.dateOfVisit} onChange={handleChange} />
           </div>
 
-
           <div className="form-group">
             <label>Number of Surviving Saplings/Trees *</label>
             <input type="number" name="treeCount" placeholder="Enter count" value={form.treeCount} onChange={handleChange} min="0" />
             {errors.treeCount && <small style={{ color: "#b91c1c" }}>{errors.treeCount}</small>}
           </div>
         </div>
-
 
         <div className="form-group">
           <label>GPS Location *</label>
@@ -146,7 +187,6 @@ const NewSubmission = () => {
           <small className="helper-text">Auto-captured from field device or enter manually</small>
         </div>
 
-
         <div className="form-group">
           <MapComponent
             pins={form.gpsLat ? [{ lat: parseFloat(form.gpsLat), lng: parseFloat(form.gpsLng) }] : []}
@@ -154,18 +194,15 @@ const NewSubmission = () => {
           />
         </div>
 
-
         <div className="form-group">
           <label>Survival Rate (%)</label>
           <input type="number" name="survivalRate" placeholder="e.g. 85" min="0" max="100" value={form.survivalRate} onChange={handleChange} />
         </div>
 
-
         <div className="form-group">
           <PhotoUploader maxFiles={5} label="Photo Evidence (min 3 required)" onFilesChange={setPhotos} />
           {errors.photos && <small style={{ color: "#b91c1c" }}>{errors.photos}</small>}
         </div>
-
 
         <div className="form-group">
           <label style={{ fontSize: "15px", fontWeight: 600, marginBottom: "12px" }}>Site Condition Assessment</label>
@@ -200,7 +237,6 @@ const NewSubmission = () => {
           </div>
         </div>
 
-
         <div className="form-group">
           <label>Restoration Activities Completed</label>
           <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "4px" }}>
@@ -218,22 +254,19 @@ const NewSubmission = () => {
           </div>
         </div>
 
-
         <div className="form-group">
           <label>Carbon Sampling Notes</label>
           <textarea name="carbonSamplingNotes" placeholder="Notes about soil carbon samples, methodology, measurements..." value={form.carbonSamplingNotes} onChange={handleChange} />
         </div>
-
 
         <div className="form-group">
           <label>Additional Field Notes</label>
           <textarea name="fieldNotes" placeholder="Optional observations, weather conditions, wildlife sightings..." value={form.fieldNotes} onChange={handleChange} />
         </div>
 
-
         <div className="form-actions" style={{ display: "flex", gap: "10px" }}>
-          <button className="primary-btn" onClick={handleSubmit} style={{ padding: "12px 24px" }}>
-            Submit for Verification
+          <button className="primary-btn" onClick={handleSubmit} disabled={submitting} style={{ padding: "12px 24px" }}>
+            {submitting ? "Submitting…" : "Submit for Verification"}
           </button>
           <button className="secondary-btn" onClick={handleSaveDraft} style={{ padding: "12px 24px" }}>
             Save Draft

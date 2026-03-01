@@ -1,31 +1,34 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { authAPI } from "../../services/api";
 
 const AuthModal = () => {
     const {
         isAuthModalOpen, authModalMode, closeAuthModal, setAuthModalMode,
-        login, connectWallet, walletAddress
+        login, loginWithToken, connectWallet, walletAddress, signMessage
     } = useAuth();
     const navigate = useNavigate();
 
     const [connecting, setConnecting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState("");
     const [form, setForm] = useState({
         fullName: "", email: "", phone: "", organization: "", walletAddress: "", role: "",
     });
 
     const demoUsers = {
-        ADMIN: { role: "ADMIN", email: "admin@nccr.gov.in", name: "Rajesh Kumar", walletAddress: "0x7a3B…9f2E" },
-        FIELD: { role: "FIELD", email: "field@ngo.org", name: "Arun Kumar", walletAddress: "0x8b4C…3a4B" },
-        VALIDATOR: { role: "VALIDATOR", email: "validator@nccr.gov.in", name: "Priya Sharma", walletAddress: "0x9c5D…4a5C" },
-        VIEWER: { role: "VIEWER", email: "community@ngo.org", name: "Meera Patel", walletAddress: "0x0d6E…5a6D" },
+        ADMIN: { role: "ADMIN", email: "admin@nccr.gov.in", name: "Rajesh Kumar", walletAddress: "0x7a3B9f2E0000000000000000000000000000002E" },
+        FIELD: { role: "FIELD", email: "field@ngo.org", name: "Arun Kumar", walletAddress: "0x8b4C3a4B00000000000000000000000000004B00" },
+        VALIDATOR: { role: "VALIDATOR", email: "validator@nccr.gov.in", name: "Priya Sharma", walletAddress: "0x9c5D4a5C00000000000000000000000000005C00" },
+        VIEWER: { role: "VIEWER", email: "community@ngo.org", name: "Meera Patel", walletAddress: "0x0d6E5a6D00000000000000000000000000006D00" },
     };
 
     useEffect(() => {
         if (isAuthModalOpen) {
             document.body.style.overflow = "hidden";
             setSubmitted(false);
+            setError("");
         } else {
             document.body.style.overflow = "unset";
         }
@@ -34,30 +37,92 @@ const AuthModal = () => {
 
     if (!isAuthModalOpen) return null;
 
-    const handleLogin = (role) => {
-        login(demoUsers[role]);
-        closeAuthModal();
-        const paths = { ADMIN: "/admin/dashboard", FIELD: "/field/dashboard", VALIDATOR: "/validator/dashboard", VIEWER: "/user/dashboard" };
-        navigate(paths[role] || "/");
+    const navigateByRole = (role) => {
+        const paths = {
+            ADMIN: "/admin/dashboard",
+            FIELD: "/field/dashboard",
+            FIELD_OFFICER: "/field/dashboard",
+            VALIDATOR: "/validator/dashboard",
+            VIEWER: "/user/dashboard",
+            USER: "/user/dashboard",
+        };
+        navigate(paths[role] || "/user/dashboard");
     };
 
-    const handleWalletConnect = () => {
+    const handleWalletConnect = async () => {
         setConnecting(true);
-        setTimeout(() => { setConnecting(false); handleLogin("ADMIN"); }, 2000);
+        setError("");
+        try {
+            const addr = await connectWallet();
+            if (!addr) { setConnecting(false); return; }
+
+            const { message, signature } = await signMessage(addr);
+
+            const res = await authAPI.loginWallet(addr, signature, message);
+            const { user, token } = res.data.data;
+            loginWithToken(user, token);
+            closeAuthModal();
+            navigateByRole(user.role);
+        } catch (err) {
+            const msg = err.response?.data?.error?.message || err.message;
+            if (msg.includes("not registered") || err.response?.status === 404) {
+                setError("Wallet not registered. Please register first.");
+            } else {
+                setError(msg || "Login failed. Try again.");
+            }
+        } finally {
+            setConnecting(false);
+        }
+    };
+
+    const handleDemoLogin = async (roleKey) => {
+        setConnecting(true);
+        setError("");
+        try {
+            const res = await authAPI.loginDemo(roleKey);
+            const { user, token } = res.data.data;
+            loginWithToken(user, token);
+            closeAuthModal();
+            navigateByRole(user.role);
+        } catch (err) {
+            console.error("Demo login failed:", err);
+            setError("Demo login currently unavailable. Backend may be down.");
+        } finally {
+            setConnecting(false);
+        }
     };
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-    const handleConnectWallet = () => setForm({ ...form, walletAddress: connectWallet() });
 
-    const handleSubmit = (e) => {
+    const handleConnectWallet = async () => {
+        const addr = await connectWallet();
+        if (addr) setForm({ ...form, walletAddress: addr });
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setError("");
         if (!form.fullName || !form.email || !form.phone || !form.organization || !form.role) {
             alert("Please fill all required fields"); return;
         }
-        if (!form.walletAddress && !walletAddress) {
+        const wallet = form.walletAddress || walletAddress;
+        if (!wallet) {
             alert("Please connect your wallet"); return;
         }
-        setSubmitted(true);
+
+        try {
+            await authAPI.register({
+                walletAddress: wallet,
+                userName: form.fullName,
+                email: form.email,
+                phone: form.phone,
+                organization: form.organization,
+            });
+            setSubmitted(true);
+        } catch (err) {
+            const msg = err.response?.data?.error?.message || "Registration failed";
+            setError(msg);
+        }
     };
 
     return (
@@ -103,6 +168,15 @@ const AuthModal = () => {
                             </p>
                         </div>
 
+                        {error && (
+                            <div style={{
+                                background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c",
+                                padding: "10px 14px", borderRadius: "8px", fontSize: "13px", marginBottom: "16px",
+                            }}>
+                                {error}
+                            </div>
+                        )}
+
                         {authModalMode === "LOGIN" ? (
                             <div>
                                 <button onClick={handleWalletConnect} disabled={connecting} style={{
@@ -122,12 +196,12 @@ const AuthModal = () => {
 
                                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                                     {[
-                                        { id: "ADMIN", label: "NCCR Admin"},
-                                        { id: "FIELD", label: "Field Officer"},
-                                        { id: "VALIDATOR", label: "Validator"},
-                                        { id: "VIEWER", label: "Community"}
+                                        { id: "ADMIN", label: "NCCR Admin" },
+                                        { id: "FIELD", label: "Field Officer" },
+                                        { id: "VALIDATOR", label: "Validator" },
+                                        { id: "VIEWER", label: "Community" }
                                     ].map(d => (
-                                        <button key={d.id} onClick={() => handleLogin(d.id)} style={{
+                                        <button key={d.id} onClick={() => handleDemoLogin(d.id)} style={{
                                             background: "#f9fafb", color: "#374151",
                                             border: "1.5px solid #e5e7eb", padding: "10px 8px",
                                             borderRadius: "8px", fontSize: "13px", fontWeight: 500, cursor: "pointer",
@@ -137,7 +211,7 @@ const AuthModal = () => {
                                             onMouseOver={(e) => { e.currentTarget.style.background = "#f3f4f6"; e.currentTarget.style.borderColor = "#d1d5db"; }}
                                             onMouseOut={(e) => { e.currentTarget.style.background = "#f9fafb"; e.currentTarget.style.borderColor = "#e5e7eb"; }}
                                         >
-                                        {d.label}
+                                            {d.label}
                                         </button>
                                     ))}
                                 </div>

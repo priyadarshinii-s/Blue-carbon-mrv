@@ -27,15 +27,15 @@ const Unauthorized = () => {
                 <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
                     <button className="primary-btn" onClick={() => {
                         if (role === "ADMIN") navigate("/admin/dashboard");
-                        else if (role === "FIELD") navigate("/field/dashboard");
+                        else if (role === "FIELD" || role === "FIELD_OFFICER") navigate("/field/dashboard");
                         else if (role === "VALIDATOR") navigate("/validator/dashboard");
                         else if (role === "VIEWER") navigate("/user/dashboard");
-                        else navigate("/login");
+                        else navigate("/");
                     }}>
                         Go to My Dashboard
                     </button>
-                    <button className="secondary-btn" onClick={() => navigate("/login")}>
-                        Login
+                    <button className="secondary-btn" onClick={() => navigate("/")}>
+                        Home
                     </button>
                 </div>
             </div>

@@ -10,7 +10,7 @@ const ViewerRoutes = () => (
   <Route
     path="/user"
     element={
-      <ProtectedRoute allowedRoles={["VIEWER", "ADMIN", "FIELD", "VALIDATOR"]}>
+      <ProtectedRoute allowedRoles={["USER", "ADMIN", "FIELD_OFFICER", "VALIDATOR"]}>
         <ViewerLayout />
       </ProtectedRoute>
     }

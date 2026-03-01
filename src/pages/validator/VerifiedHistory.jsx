@@ -1,21 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StatusBadge from "../../components/shared/StatusBadge";
+import { verificationsAPI } from "../../services/api";
 
-const verifiedHistory = [
-    { id: 1, project: "Mangrove Restoration – TN", officer: "Arun Kumar", date: "14 Feb 2026", trees: 310, survivalRate: 82, decision: "approved", txHash: "0xabc123...def789", comment: "All data verified. GPS matches." },
-    { id: 2, project: "Saltmarsh Recovery – Gujarat", officer: "Vikram Singh", date: "10 Feb 2026", trees: 275, survivalRate: 78, decision: "approved", txHash: "0x456abc...123def", comment: "Good documentation." },
-    { id: 3, project: "Seagrass Revival – Kerala", officer: "Priya Devi", date: "05 Feb 2026", trees: 120, survivalRate: 60, decision: "rejected", txHash: "0x789def...456abc", comment: "GPS does not match project boundary." },
-    { id: 4, project: "Mangrove Belt – Odisha", officer: "Lakshmi Nair", date: "01 Feb 2026", trees: 400, survivalRate: 88, decision: "approved", txHash: "0xfed987...cba321", comment: "Excellent field documentation." },
-    { id: 5, project: "Tidal Flat – AP", officer: "Ravi Kumar", date: "28 Jan 2026", trees: 210, survivalRate: 70, decision: "correction", txHash: "—", comment: "Photos blurry. Re-submit required." },
-];
-
-const borderColor = { approved: "#047857", rejected: "#b91c1c", correction: "#b45309" };
+const borderColor = { Approved: "#047857", Rejected: "#b91c1c", NeedsCorrection: "#b45309" };
+const decisionMap = { Approved: "approved", Rejected: "rejected", NeedsCorrection: "correction" };
 
 const VerifiedHistory = () => {
+    const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("ALL");
     const [detail, setDetail] = useState(null);
 
-    const filtered = verifiedHistory.filter((v) => filter === "ALL" || v.decision === filter);
+    useEffect(() => {
+        verificationsAPI.getHistory()
+            .then(res => setHistory(res.data.data || []))
+            .catch(() => setHistory([]))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const filtered = history.filter((v) => filter === "ALL" || decisionMap[v.status] === filter);
+
+    if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Loading verified submissions…</div>;
 
     return (
         <>
@@ -34,27 +39,36 @@ const VerifiedHistory = () => {
                 </div>
             </div>
 
-            <div className="list-container">
-                {filtered.map((v) => (
-                    <div
-                        key={v.id}
-                        className="list-row"
-                        style={{ cursor: "pointer", borderLeft: `3px solid ${borderColor[v.decision] || "#e5e7eb"}` }}
-                        onClick={() => setDetail(v)}
-                    >
-                        <div className="list-row-main">
-                            <span className="list-row-title">{v.project}</span>
-                            <span className="list-row-meta">{v.officer} · {v.date} · {v.trees} trees · {v.survivalRate}% survival</span>
+            {filtered.length === 0 ? (
+                <div className="card" style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
+                    No verified submissions found.
+                </div>
+            ) : (
+                <div className="list-container">
+                    {filtered.map((v) => (
+                        <div
+                            key={v.id}
+                            className="list-row"
+                            style={{ cursor: "pointer", borderLeft: `3px solid ${borderColor[v.status] || "#e5e7eb"}` }}
+                            onClick={() => setDetail(v)}
+                        >
+                            <div className="list-row-main">
+                                <span className="list-row-title">{v.projectName}</span>
+                                <span className="list-row-meta">
+                                    {v.submissionId} · {new Date(v.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                                    {v.approvedCredits > 0 ? ` · ${v.approvedCredits} tCO₂e` : ""}
+                                </span>
+                            </div>
+                            <div className="list-row-end">
+                                <StatusBadge status={decisionMap[v.status] || v.status} />
+                                <button className="secondary-btn" style={{ fontSize: "12px", padding: "5px 12px" }} onClick={(e) => { e.stopPropagation(); setDetail(v); }}>
+                                    View
+                                </button>
+                            </div>
                         </div>
-                        <div className="list-row-end">
-                            <StatusBadge status={v.decision} />
-                            <button className="secondary-btn" style={{ fontSize: "12px", padding: "5px 12px" }} onClick={(e) => { e.stopPropagation(); setDetail(v); }}>
-                                View
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
 
             {detail && (
                 <div className="modal-overlay" onClick={() => setDetail(null)}>
@@ -64,18 +78,18 @@ const VerifiedHistory = () => {
                             <button onClick={() => setDetail(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }}>×</button>
                         </div>
                         <div style={{ fontSize: "14px", lineHeight: "2" }}>
-                            <div><strong>Project:</strong> {detail.project}</div>
-                            <div><strong>Officer:</strong> {detail.officer}</div>
-                            <div><strong>Trees:</strong> {detail.trees} @ {detail.survivalRate}% survival</div>
-                            <div><strong>Decision:</strong> <StatusBadge status={detail.decision} /></div>
-                            {detail.txHash !== "—" && (
-                                <div><strong>Tx:</strong> <a href={`https://mumbai.polygonscan.com/tx/${detail.txHash}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", fontFamily: "monospace", color: "#0f766e" }}>{detail.txHash}</a></div>
-                            )}
+                            <div><strong>Project:</strong> {detail.projectName}</div>
+                            <div><strong>Submission:</strong> {detail.submissionId}</div>
+                            <div><strong>Credits:</strong> {detail.approvedCredits > 0 ? `${detail.approvedCredits} tCO₂e` : "—"}</div>
+                            <div><strong>Decision:</strong> <StatusBadge status={decisionMap[detail.status] || detail.status} /></div>
+                            <div><strong>Date:</strong> {new Date(detail.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</div>
                         </div>
-                        <div className="card mt-20" style={{ borderLeftColor: borderColor[detail.decision] }}>
-                            <h3 style={{ fontSize: "13px", marginBottom: "6px" }}>Your Comment</h3>
-                            <p style={{ fontSize: "13px" }}>{detail.comment}</p>
-                        </div>
+                        {detail.remarks && (
+                            <div className="card mt-20" style={{ borderLeftColor: borderColor[detail.status] }}>
+                                <h3 style={{ fontSize: "13px", marginBottom: "6px" }}>Your Comment</h3>
+                                <p style={{ fontSize: "13px" }}>{detail.remarks}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

@@ -1,46 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ExportButtons from "../../components/shared/ExportButtons";
 import StatusBadge from "../../components/shared/StatusBadge";
-
-const reportData = [
-  { project: "Mangrove Restoration – TN", year: 2025, credits: 120, type: "Mangrove", status: "minted" },
-  { project: "Mangrove Restoration – TN", year: 2026, credits: 85, type: "Mangrove", status: "approved" },
-  { project: "Seagrass Revival – Kerala", year: 2025, credits: 45, type: "Seagrass", status: "minted" },
-  { project: "Saltmarsh Recovery – Gujarat", year: 2025, credits: 85, type: "Salt Marsh", status: "minted" },
-  { project: "Saltmarsh Recovery – Gujarat", year: 2026, credits: 55, type: "Salt Marsh", status: "pending" },
-  { project: "Mangrove Belt – Odisha", year: 2025, credits: 200, type: "Mangrove", status: "minted" },
-  { project: "Coastal Wetland – WB", year: 2025, credits: 310, type: "Mangrove", status: "minted" },
-  { project: "Delta Mangrove – Sundarbans", year: 2026, credits: 180, type: "Mangrove", status: "approved" },
-  { project: "Tidal Flat Restoration – AP", year: 2026, credits: 55, type: "Salt Marsh", status: "pending" },
-];
-
-const officerPerformance = [
-  { name: "Arun Kumar", submissions: 24, approved: 20, rejected: 2, pending: 2, rate: "83%" },
-  { name: "Vikram Singh", submissions: 18, approved: 16, rejected: 1, pending: 1, rate: "89%" },
-  { name: "Lakshmi Nair", submissions: 15, approved: 13, rejected: 1, pending: 1, rate: "87%" },
-  { name: "Priya Devi", submissions: 12, approved: 10, rejected: 0, pending: 2, rate: "83%" },
-  { name: "Ravi Kumar", submissions: 8, approved: 6, rejected: 1, pending: 1, rate: "75%" },
-];
+import { reportsAPI } from "../../services/api";
 
 const Reports = () => {
   const [activeReport, setActiveReport] = useState("ledger");
-  const [dateFrom, setDateFrom] = useState("2025-01-01");
-  const [dateTo, setDateTo] = useState("2026-12-31");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [filterEcosystem, setFilterEcosystem] = useState("ALL");
   const [filterYear, setFilterYear] = useState("ALL");
 
+  const [reportData, setReportData] = useState([]);
+  const [ndcData, setNdcData] = useState(null);
+  const [officerPerformance, setOfficerPerformance] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      reportsAPI.getLedger().catch(() => ({ data: { data: [] } })),
+      reportsAPI.getNDC().catch(() => ({ data: { data: null } })),
+      reportsAPI.getPerformance().catch(() => ({ data: { data: [] } }))
+    ])
+      .then(([ledgerRes, ndcRes, perfRes]) => {
+        setReportData(ledgerRes.data.data || []);
+        setNdcData(ndcRes.data.data || null);
+        setOfficerPerformance(perfRes.data.data || []);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   const filteredData = reportData.filter((d) => {
-    if (filterEcosystem !== "ALL" && d.type !== filterEcosystem) return false;
-    if (filterYear !== "ALL" && d.year !== parseInt(filterYear)) return false;
+    if (filterEcosystem !== "ALL" && d.projectType !== filterEcosystem) return false;
+    if (filterYear !== "ALL" && String(d.year) !== filterYear) return false;
     return true;
   });
 
-  const totalCredits = filteredData.reduce((sum, d) => sum + d.credits, 0);
+  const totalCredits = filteredData.reduce((sum, d) => sum + (d.credits || 0), 0);
 
   return (
     <>
       <h1>Reports & Exports</h1>
-
 
       <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
         {[
@@ -59,7 +59,6 @@ const Reports = () => {
         ))}
       </div>
 
-
       <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
         <div>
           <label style={{ fontSize: "12px", marginRight: "4px" }}>From:</label>
@@ -75,9 +74,9 @@ const Reports = () => {
               <label style={{ fontSize: "12px", marginRight: "4px" }}>Ecosystem:</label>
               <select value={filterEcosystem} onChange={(e) => setFilterEcosystem(e.target.value)} style={{ width: "auto", padding: "4px 8px" }}>
                 <option value="ALL">All</option>
-                <option value="Mangrove">Mangrove</option>
-                <option value="Seagrass">Seagrass</option>
-                <option value="Salt Marsh">Salt Marsh</option>
+                <option value="MANGROVE">Mangrove</option>
+                <option value="SEAGRASS">Seagrass</option>
+                <option value="SALTMARSH">Salt Marsh</option>
               </select>
             </div>
             <div>
@@ -93,8 +92,9 @@ const Reports = () => {
         <ExportButtons />
       </div>
 
-
-      {activeReport === "ledger" && (
+      {loading ? (
+        <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Generating reports...</div>
+      ) : activeReport === "ledger" && (
         <div>
           <div className="card" style={{ display: "inline-block", marginBottom: "16px" }}>
             <h3 style={{ fontSize: "13px" }}>Total Credits (Filtered)</h3>
@@ -112,11 +112,13 @@ const Reports = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredData.map((d, i) => (
+              {filteredData.length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: "center" }}>No ledger data found</td></tr>
+              ) : filteredData.map((d, i) => (
                 <tr key={i}>
-                  <td>{d.project}</td>
+                  <td>{d.projectName}</td>
                   <td>{d.year}</td>
-                  <td>{d.type}</td>
+                  <td>{d.projectType}</td>
                   <td>{d.credits}</td>
                   <td><StatusBadge status={d.status} /></td>
                 </tr>
@@ -126,23 +128,22 @@ const Reports = () => {
         </div>
       )}
 
-
-      {activeReport === "ndc" && (
+      {!loading && activeReport === "ndc" && ndcData && (
         <div>
           <div className="card">
             <h3 style={{ fontSize: "15px", marginBottom: "12px" }}>NDC Compliance Summary</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", fontSize: "14px" }}>
               <div>
                 <div style={{ color: "#6b7280", fontSize: "12px" }}>Total Verified CO₂</div>
-                <div style={{ fontSize: "24px", fontWeight: "bold" }}>6,720 tCO₂e</div>
+                <div style={{ fontSize: "24px", fontWeight: "bold" }}>{ndcData.tokens?.totalMinted || 0} tCO₂e</div>
               </div>
               <div>
-                <div style={{ color: "#6b7280", fontSize: "12px" }}>NDC Target Progress</div>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#0f766e" }}>67.2%</div>
+                <div style={{ color: "#6b7280", fontSize: "12px" }}>Contributions Tracked</div>
+                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#0f766e" }}>{ndcData.submissions?.approved || 0} sub.</div>
               </div>
               <div>
-                <div style={{ color: "#6b7280", fontSize: "12px" }}>Projects Contributing</div>
-                <div style={{ fontSize: "24px", fontWeight: "bold" }}>24</div>
+                <div style={{ color: "#6b7280", fontSize: "12px" }}>Ecosystems</div>
+                <div style={{ fontSize: "24px", fontWeight: "bold" }}>{ndcData.byEcosystem?.length || 0}</div>
               </div>
             </div>
           </div>
@@ -150,26 +151,29 @@ const Reports = () => {
           <table className="table mt-20">
             <thead>
               <tr>
-                <th>State</th>
+                <th>Ecosystem Type</th>
                 <th>Projects</th>
                 <th>Hectares</th>
                 <th>Credits (tCO₂e)</th>
-                <th>Contribution %</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td>Tamil Nadu</td><td>8</td><td>120.5</td><td>2,400</td><td>35.7%</td></tr>
-              <tr><td>Kerala</td><td>5</td><td>75.2</td><td>1,200</td><td>17.9%</td></tr>
-              <tr><td>Gujarat</td><td>4</td><td>95.0</td><td>1,400</td><td>20.8%</td></tr>
-              <tr><td>Odisha</td><td>4</td><td>80.0</td><td>1,100</td><td>16.4%</td></tr>
-              <tr><td>West Bengal</td><td>3</td><td>55.7</td><td>620</td><td>9.2%</td></tr>
+              {ndcData.byEcosystem?.length === 0 ? (
+                <tr><td colSpan="4" style={{ textAlign: "center" }}>No NDC data available</td></tr>
+              ) : ndcData.byEcosystem?.map((e, index) => (
+                <tr key={index}>
+                  <td>{e._id}</td>
+                  <td>{e.totalProjects}</td>
+                  <td>{e.totalAreaHa}</td>
+                  <td>{e.totalCredits}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       )}
 
-
-      {activeReport === "performance" && (
+      {!loading && activeReport === "performance" && (
         <table className="table">
           <thead>
             <tr>
@@ -182,14 +186,16 @@ const Reports = () => {
             </tr>
           </thead>
           <tbody>
-            {officerPerformance.map((o, i) => (
+            {officerPerformance.length === 0 ? (
+              <tr><td colSpan="6" style={{ textAlign: "center" }}>No performance data found</td></tr>
+            ) : officerPerformance.map((o, i) => (
               <tr key={i}>
-                <td style={{ fontWeight: 500 }}>{o.name}</td>
-                <td>{o.submissions}</td>
+                <td style={{ fontWeight: 500 }}>{o.name} <br /><span style={{ fontSize: "10px", color: "gray" }}>{o.wallet?.slice(0, 10)}...</span></td>
+                <td>{o.totalSubmissions}</td>
                 <td style={{ color: "#047857" }}>{o.approved}</td>
                 <td style={{ color: "#b91c1c" }}>{o.rejected}</td>
                 <td style={{ color: "#b45309" }}>{o.pending}</td>
-                <td><strong>{o.rate}</strong></td>
+                <td><strong>{Math.round(o.approvalRate)}%</strong></td>
               </tr>
             ))}
           </tbody>

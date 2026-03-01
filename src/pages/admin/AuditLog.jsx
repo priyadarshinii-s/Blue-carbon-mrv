@@ -1,17 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const auditLogs = [
-    { id: 1, timestamp: "2026-02-21 14:30:00", action: "CREDIT_MINTED", user: "admin@nccr.gov.in", wallet: "0x7a3B...9f2E", txHash: "0xabc123...def789", details: "Minted 20.4 tCO₂e for Mangrove Restoration – TN" },
-    { id: 2, timestamp: "2026-02-21 12:15:00", action: "SUBMISSION_VERIFIED", user: "validator@nccr.gov.in", wallet: "0x8b4C...3a4B", txHash: "0x456abc...123def", details: "Approved submission #24 for Mangrove Restoration – TN" },
-    { id: 3, timestamp: "2026-02-20 16:45:00", action: "DATA_SUBMITTED", user: "field.officer@ngo.org", wallet: "0x9c5D...5a6D", txHash: "0x789def...456abc", details: "Field data submitted for Seagrass Revival – Kerala" },
-    { id: 4, timestamp: "2026-02-20 10:30:00", action: "USER_APPROVED", user: "admin@nccr.gov.in", wallet: "0x7a3B...9f2E", txHash: "—", details: "Approved user Neha Gupta as Field Officer" },
-    { id: 5, timestamp: "2026-02-19 09:00:00", action: "PROJECT_CREATED", user: "admin@nccr.gov.in", wallet: "0x7a3B...9f2E", txHash: "—", details: "Created project: Tidal Flat Restoration – AP" },
-    { id: 6, timestamp: "2026-02-18 17:20:00", action: "CREDIT_MINTED", user: "admin@nccr.gov.in", wallet: "0x7a3B...9f2E", txHash: "0xfed987...cba321", details: "Minted 13.5 tCO₂e for Saltmarsh Recovery – Gujarat" },
-    { id: 7, timestamp: "2026-02-18 11:00:00", action: "SUBMISSION_REJECTED", user: "validator@nccr.gov.in", wallet: "0x8b4C...3a4B", txHash: "0x321cba...987fed", details: "Rejected submission #18 – insufficient photo evidence" },
-    { id: 8, timestamp: "2026-02-17 15:30:00", action: "ROLE_CHANGED", user: "admin@nccr.gov.in", wallet: "0x7a3B...9f2E", txHash: "—", details: "Changed Ravi Kumar role to Validator" },
-    { id: 9, timestamp: "2026-02-16 13:00:00", action: "DATA_SUBMITTED", user: "field.officer@ngo.org", wallet: "0x0d6E...7a8E", txHash: "0x654fed...321abc", details: "Field data submitted for Mangrove Belt – Odisha" },
-    { id: 10, timestamp: "2026-02-15 09:45:00", action: "CREDIT_RETIRED", user: "community@ngo.org", wallet: "0x2f8G...9c0G", txHash: "0x987abc...654def", details: "Retired 50 tCO₂e from Coastal Wetland – WB" },
-];
+import { reportsAPI } from "../../services/api";
 
 const actionColors = {
     CREDIT_MINTED: "#0f766e",
@@ -25,21 +14,31 @@ const actionColors = {
 };
 
 const AuditLog = () => {
+    const [auditLogs, setAuditLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [filterAction, setFilterAction] = useState("ALL");
     const [searchTx, setSearchTx] = useState("");
     const [searchWallet, setSearchWallet] = useState("");
 
+    useEffect(() => {
+        reportsAPI.getAuditLogs()
+            .then(res => setAuditLogs(res.data.data || []))
+            .catch(() => setAuditLogs([]))
+            .finally(() => setLoading(false));
+    }, []);
+
     const filteredLogs = auditLogs.filter((log) => {
         if (filterAction !== "ALL" && log.action !== filterAction) return false;
-        if (searchTx && !log.txHash.toLowerCase().includes(searchTx.toLowerCase())) return false;
-        if (searchWallet && !log.wallet.toLowerCase().includes(searchWallet.toLowerCase())) return false;
+        if (searchTx && log.txHash && !log.txHash.toLowerCase().includes(searchTx.toLowerCase())) return false;
+        if (searchWallet && log.walletAddress && !log.walletAddress.toLowerCase().includes(searchWallet.toLowerCase())) return false;
         return true;
     });
+
+    if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Loading audit logs…</div>;
 
     return (
         <>
             <h1>Audit Log</h1>
-
 
             <div style={{ display: "flex", gap: "12px", marginBottom: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
                 <div className="form-group" style={{ margin: 0, flex: "0 0 auto" }}>
@@ -78,9 +77,16 @@ const AuditLog = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredLogs.map((log) => (
-                        <tr key={log.id}>
-                            <td style={{ fontSize: "12px", whiteSpace: "nowrap" }}>{log.timestamp}</td>
+                    {filteredLogs.length === 0 ? (
+                        <tr><td colSpan="6" style={{ textAlign: "center", padding: "20px" }}>No audit logs found.</td></tr>
+                    ) : filteredLogs.map((log) => (
+                        <tr key={log._id}>
+                            <td style={{ fontSize: "12px", whiteSpace: "nowrap" }}>
+                                {new Date(log.timestamp).toLocaleString("en-GB", {
+                                    day: '2-digit', month: 'short', year: 'numeric',
+                                    hour: '2-digit', minute: '2-digit'
+                                })}
+                            </td>
                             <td>
                                 <span style={{
                                     padding: "3px 8px", borderRadius: "4px", fontSize: "11px", fontWeight: 600,
@@ -90,10 +96,10 @@ const AuditLog = () => {
                                     {log.action.replace(/_/g, " ")}
                                 </span>
                             </td>
-                            <td style={{ fontSize: "13px" }}>{log.user}</td>
-                            <td style={{ fontSize: "11px", fontFamily: "monospace" }}>{log.wallet}</td>
+                            <td style={{ fontSize: "13px" }}>{log.userEmail}</td>
+                            <td style={{ fontSize: "11px", fontFamily: "monospace" }}>{log.walletAddress}</td>
                             <td>
-                                {log.txHash !== "—" ? (
+                                {log.txHash && log.txHash !== "—" ? (
                                     <a
                                         href={`https://mumbai.polygonscan.com/tx/${log.txHash}`}
                                         target="_blank"

@@ -7,6 +7,7 @@ import PhotoUploader from "../../components/shared/PhotoUploader";
 import DraftRecoveryBanner from "../../components/shared/DraftRecoveryBanner";
 import ConfirmationTxModal from "../../components/shared/ConfirmationTxModal";
 import ProjectSuccessScreen from "../../components/shared/ProjectSuccessScreen";
+import { projectsAPI } from "../../services/api";
 
 const DRAFT_KEY = "user_project_draft";
 const STEPS = ["Basic Details", "Location", "Evidence", "Timeline"];
@@ -35,6 +36,7 @@ const UserCreateProject = () => {
     const [submitting, setSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState({});
     const [success, setSuccess] = useState(null);
+    const [apiError, setApiError] = useState("");
     const draftTimer = useRef(null);
 
     useEffect(() => {
@@ -124,16 +126,40 @@ const UserCreateProject = () => {
         setShowConfirmModal(true);
     };
 
-    const handleConfirmSubmit = () => {
+    const handleConfirmSubmit = async () => {
         setSubmitting(true);
         setShowConfirmModal(false);
-        setTimeout(() => {
-            setSubmitting(false);
+        setApiError("");
+
+        const typeMap = { mangrove: "MANGROVE", seagrass: "SEAGRASS", saltmarsh: "SALTMARSH", mixed: "MIXED" };
+        const projectType = typeMap[form.ecosystemType?.toLowerCase()] || form.ecosystemType?.toUpperCase() || "MANGROVE";
+
+        const payload = {
+            projectName: form.name,
+            projectType,
+            description: form.description,
+            location: form.location,
+            approximateAreaHa: parseFloat(form.area) || 0,
+            plannedActivities: form.activities,
+            startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,
+            endDate: form.endDate ? new Date(form.endDate).toISOString() : undefined,
+        };
+
+        try {
+            const res = await projectsAPI.create(payload);
+            const project = res.data.data.project || res.data.data;
             localStorage.removeItem(DRAFT_KEY);
-            const id = "BCR-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-            const tx = "0x" + Math.random().toString(16).slice(2, 42);
-            setSuccess({ id, tx, name: form.name });
-        }, 3000);
+            setSuccess({
+                id: project.projectId || project._id,
+                tx: project.blockchainProjectHash || "0x" + Math.random().toString(16).slice(2, 42),
+                name: form.name,
+            });
+        } catch (err) {
+            const msg = err.response?.data?.message || err.response?.data?.error?.message || "Failed to create project. Please try again.";
+            setApiError(msg);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (success) {
@@ -159,6 +185,12 @@ const UserCreateProject = () => {
                     onConfirm={handleConfirmSubmit}
                     onCancel={() => setShowConfirmModal(false)}
                 />
+            )}
+
+            {apiError && (
+                <div style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#b91c1c", padding: "10px 14px", borderRadius: "8px", fontSize: "13px", marginBottom: "16px" }}>
+                    {apiError}
+                </div>
             )}
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
