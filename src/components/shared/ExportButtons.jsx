@@ -1,4 +1,4 @@
-const ExportButtons = ({ data, filename = "export" }) => {
+const ExportButtons = () => {
     const handleCSV = () => {
         alert("CSV export: Would generate CSV from filtered data and download. (PapaParse integration pending)");
     };

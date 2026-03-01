@@ -27,6 +27,7 @@ const VerificationQueue = () => {
   const [commentError, setCommentError] = useState("");
   const [calculationDone, setCalculationDone] = useState(false);
   const [rejectModal, setRejectModal] = useState({ open: false, decision: null });
+  const [txHash, setTxHash] = useState("");
 
   useEffect(() => {
     verificationsAPI.getQueue()
@@ -84,10 +85,11 @@ const VerificationQueue = () => {
         approvedCredits: decision === "approved" ? selected.trees * 0.03 : 0,
       });
     } catch {
-
+      /* ignore */
     }
 
     setQueue((prev) => prev.filter((q) => q.id !== selected.id));
+    setTxHash(`0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2, 10)}`);
     setVerdict(decision);
     setSaving(false);
   };
@@ -127,7 +129,7 @@ const VerificationQueue = () => {
           <div className="card mt-20" style={{ display: "inline-block", textAlign: "left", minWidth: "300px" }}>
             <div style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>Verification Tx Hash</div>
             <div style={{ fontSize: "12px", fontFamily: "monospace", wordBreak: "break-all", color: "#0f766e" }}>
-              0x{Math.random().toString(16).slice(2)}...{Math.random().toString(16).slice(2, 10)}
+              {txHash}
             </div>
           </div>
         )}

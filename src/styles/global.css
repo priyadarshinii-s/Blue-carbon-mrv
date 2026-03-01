@@ -26,6 +26,11 @@
   padding: 0;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
@@ -644,6 +649,18 @@ button {
   overflow: hidden;
 }
 
+.leaflet-container {
+  z-index: 10 !important;
+}
+
+.leaflet-pane {
+  z-index: 10 !important;
+}
+
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 20 !important;
+}
 
 ::-webkit-scrollbar {
   width: 6px;
@@ -658,9 +675,6 @@ button {
   border-radius: 3px;
 }
 
-
-
-/* Review Wizard */
 .wizard-container {
   margin: 0 auto;
 }
@@ -787,7 +801,6 @@ button {
   border-top: 1px solid var(--border);
 }
 
-/* Decision section – elevated, centered container */
 .decision-section {
   max-width: 660px;
   margin: 28px auto 0;

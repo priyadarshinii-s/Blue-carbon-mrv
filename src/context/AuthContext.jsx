@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAccount, useDisconnect, useSignMessage } from "wagmi";
 import { authAPI } from "../services/api";
 
 const AuthContext = createContext(null);
@@ -18,6 +19,10 @@ export const AuthProvider = ({ children }) => {
 
   const { isAuthenticated, user, role, walletAddress, loading } = authState;
   const SESSION_DURATION = 24 * 60 * 60 * 1000;
+
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
+  const { disconnect: wagmiDisconnect } = useDisconnect();
+  const { signMessageAsync } = useSignMessage();
 
   const loginWithToken = useCallback((userData, token) => {
     const now = Date.now().toString();
@@ -57,8 +62,9 @@ export const AuthProvider = ({ children }) => {
       walletAddress: null,
       loading: false
     });
+    wagmiDisconnect();
     navigate("/", { replace: true });
-  }, [navigate]);
+  }, [navigate, wagmiDisconnect]);
 
   const checkSessionExpiration = useCallback(() => {
     const loginAt = localStorage.getItem("bcmrv_login_at");
@@ -117,13 +123,32 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-
     const interval = setInterval(() => {
       checkSessionExpiration();
     }, 60000);
-
     return () => clearInterval(interval);
   }, [isAuthenticated, checkSessionExpiration]);
+
+  useEffect(() => {
+    if (!wagmiAddress || !isAuthenticated) return;
+
+    const newAddr = wagmiAddress.toLowerCase();
+    const currentAddr = walletAddress;
+
+    if (currentAddr && newAddr !== currentAddr) {
+      localStorage.removeItem("bcmrv_token");
+      localStorage.removeItem("bcmrv_user");
+      localStorage.removeItem("bcmrv_login_at");
+      setAuthState({
+        isAuthenticated: false,
+        user: null,
+        role: null,
+        walletAddress: null,
+        loading: false,
+      });
+      navigate("/", { replace: true });
+    }
+  }, [wagmiAddress, isAuthenticated, walletAddress, navigate]);
 
   const openLogin = () => {
     setAuthModalMode("LOGIN");
@@ -139,138 +164,19 @@ export const AuthProvider = ({ children }) => {
     setIsAuthModalOpen(false);
   };
 
-  const connectWallet = useCallback(async () => {
-    if (!window.ethereum) {
-      alert("MetaMask is not installed. Please install it to continue.");
-      return null;
-    }
-    try {
-      const permissions = await window.ethereum.request({
-        method: "wallet_requestPermissions",
-        params: [{ eth_accounts: {} }],
-      });
-
-      const accountsPerm = permissions.find(p => p.parentCapability === "eth_accounts");
-      const grantedAccounts = accountsPerm?.caveats?.[0]?.value || [];
-
-      if (grantedAccounts.length === 0) {
-        const fallback = await window.ethereum.request({ method: "eth_requestAccounts" });
-        if (!fallback || fallback.length === 0) return null;
-        var addr = fallback[0].toLowerCase();
-      } else {
-        var addr = grantedAccounts[grantedAccounts.length - 1].toLowerCase();
-      }
-
-      setAuthState(prev => {
-        const newState = { ...prev, walletAddress: addr };
-        if (prev.user) {
-          newState.user = { ...prev.user, walletAddress: addr };
-          localStorage.setItem("bcmrv_user", JSON.stringify(newState.user));
-        }
-        return newState;
-      });
-
-      return addr;
-    } catch (err) {
-      if (err.code === 4001) {
-        console.log("User rejected wallet connection");
-      } else {
-        console.error("Wallet connect failed:", err);
-      }
-      return null;
-    }
-  }, []);
-
-  const disconnectWallet = useCallback(() => {
-    setAuthState(prev => {
-      const newState = { ...prev, walletAddress: null };
-      if (prev.user) {
-        newState.user = { ...prev.user, walletAddress: null };
-        localStorage.setItem("bcmrv_user", JSON.stringify(newState.user));
-      }
-      return newState;
-    });
-  }, []);
-
-  const signMessage = useCallback(async (address) => {
-    if (!window.ethereum) throw new Error("MetaMask not found");
+  const signMessage = useCallback(async () => {
     const message = `Sign in to Blue Carbon MRV\nTimestamp: ${Date.now()}`;
-    const signature = await window.ethereum.request({
-      method: "personal_sign",
-      params: [message, address],
-    });
+    const signature = await signMessageAsync({ message });
     return { message, signature };
-  }, []);
-
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    const handleAccountsChanged = async (accounts) => {
-      if (!accounts || accounts.length === 0) {
-        logout();
-        return;
-      }
-
-      const newAddr = accounts[0].toLowerCase();
-      const currentAddr = authState.walletAddress;
-
-      if (currentAddr && newAddr !== currentAddr && authState.isAuthenticated) {
-        localStorage.removeItem("bcmrv_token");
-        localStorage.removeItem("bcmrv_user");
-        localStorage.removeItem("bcmrv_login_at");
-
-        try {
-          const message = `Sign in to Blue Carbon MRV\nTimestamp: ${Date.now()}`;
-          const signature = await window.ethereum.request({
-            method: "personal_sign",
-            params: [message, newAddr],
-          });
-
-          const res = await authAPI.loginWallet(newAddr, signature, message);
-
-          const { user: userData, token } = res.data.data;
-          loginWithToken(userData, token);
-
-          const dashRoutes = {
-            ADMIN: "/admin/dashboard",
-            FIELD_OFFICER: "/field/dashboard",
-            VALIDATOR: "/validator/dashboard",
-            USER: "/user/dashboard",
-          };
-          navigate(dashRoutes[userData.role] || "/", { replace: true });
-        } catch (err) {
-          console.error("Account switch re-auth failed:", err);
-          setAuthState({
-            isAuthenticated: false,
-            user: null,
-            role: null,
-            walletAddress: newAddr,
-            loading: false,
-          });
-          navigate("/", { replace: true });
-        }
-      }
-    };
-
-    const handleChainChanged = () => {
-      window.location.reload();
-    };
-
-    window.ethereum.on("accountsChanged", handleAccountsChanged);
-    window.ethereum.on("chainChanged", handleChainChanged);
-
-    return () => {
-      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
-      window.ethereum.removeListener("chainChanged", handleChainChanged);
-    };
-  }, [authState.walletAddress, authState.isAuthenticated, loginWithToken, logout, navigate]);
+  }, [signMessageAsync]);
 
   return (
     <AuthContext.Provider value={{
-      isAuthenticated, user, role, walletAddress, loading,
+      isAuthenticated, user, role, walletAddress: wagmiAddress?.toLowerCase() || walletAddress, loading,
       isAuthModalOpen, authModalMode,
       login, loginWithToken, logout,
-      connectWallet, disconnectWallet, signMessage,
+      signMessage,
+      wagmiAddress, wagmiConnected,
       openLogin, openRegister, closeAuthModal, setAuthModalMode
     }}>
       {children}

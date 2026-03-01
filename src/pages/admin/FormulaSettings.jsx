@@ -38,7 +38,7 @@ const FormulaSettings = () => {
         try {
             await updateFormula({ co2PerTree: val, co2Factors: parsedFactors });
             setStatus({ type: "success", message: "Formula saved to database!" });
-        } catch (err) {
+        } catch {
             setStatus({ type: "error", message: "Failed to save settings." });
         } finally {
             setIsSaving(false);

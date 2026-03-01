@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { authAPI, reportsAPI } from "../services/api";
+import { reportsAPI } from "../services/api";
 
 const SLIDES = ["/mangrove.jpg", "/saltmarsh.jpg", "/seagrass.jpg"];
 const INTERVAL_MS = 5000;

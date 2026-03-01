@@ -42,7 +42,7 @@ const UserDashboard = () => {
 
             <div className="mt-30">
                 <h2 style={{ fontSize: "18px", marginBottom: "12px" }}>Projects Near You</h2>
-                <MapComponent height="280px" pins={projects.map(p => ({ lat: 11.12, lng: 78.65 }))} />
+                <MapComponent height="280px" pins={projects.map(() => ({ lat: 11.12, lng: 78.65 }))} />
             </div>
 
             <div className="mt-30">

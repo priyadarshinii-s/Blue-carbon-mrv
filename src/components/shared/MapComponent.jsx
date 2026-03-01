@@ -1,61 +1,47 @@
-const MapComponent = ({ pins = [], height = "240px", editable = false, showPolygon = false }) => {
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { useEffect } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
+
+const FlyToPin = ({ lat, lng }) => {
+    const map = useMap();
+    useEffect(() => {
+        if (lat && lng) map.flyTo([lat, lng], 13, { duration: 1 });
+    }, [lat, lng, map]);
+    return null;
+};
+
+const MapComponent = ({ pins = [], height = "240px", center, zoom = 5 }) => {
+    const defaultCenter = center || (pins.length > 0 ? [pins[0].lat, pins[0].lng] : [20.5937, 78.9629]);
+    const defaultZoom = pins.length > 0 ? 13 : zoom;
+
     return (
-        <div style={{
-            height,
-            background: "#e8f0f8",
-            borderRadius: "6px",
-            border: "1px solid #d1d5db",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            position: "relative",
-            overflow: "hidden",
-        }}>
-
-            <div style={{
-                position: "absolute", inset: 0, opacity: 0.15,
-                backgroundImage: "linear-gradient(#0f2a44 1px, transparent 1px), linear-gradient(90deg, #0f2a44 1px, transparent 1px)",
-                backgroundSize: "40px 40px",
-            }} />
-
-            {showPolygon && (
-                <div style={{
-                    position: "absolute",
-                    top: "20%", left: "20%", right: "20%", bottom: "20%",
-                    border: "2px dashed #0f766e",
-                    background: "rgba(15, 118, 110, 0.08)",
-                    borderRadius: "4px",
-                }} />
-            )}
-
-            {pins.map((pin, i) => (
-                <div key={i} style={{
-                    position: "absolute",
-                    top: `${30 + i * 15}%`,
-                    left: `${40 + i * 10}%`,
-                    fontSize: "20px",
-                    textShadow: "0 1px 3px rgba(0,0,0,0.3)",
-                    transform: "translate(-50%, -100%)",
-                }}>
-                    📍
-                </div>
-            ))}
-
-            <div style={{ position: "relative", zIndex: 1, textAlign: "center", color: "#6b7280" }}>
-                <div style={{ fontSize: "24px" }}>🗺️</div>
-                <div style={{ fontSize: "12px", marginTop: "4px" }}>
-                    {pins.length > 0
-                        ? `${pins.length} location${pins.length > 1 ? "s" : ""} marked`
-                        : editable
-                            ? "Click to place marker (Leaflet integration pending)"
-                            : "Map view (Leaflet integration pending)"}
-                </div>
-                {pins.length > 0 && (
-                    <div style={{ fontSize: "11px", fontFamily: "monospace", marginTop: "4px" }}>
-                        {pins.map((p) => `${p.lat}°N, ${p.lng}°E`).join(" | ")}
-                    </div>
-                )}
-            </div>
+        <div style={{ height, borderRadius: "8px", overflow: "hidden", border: "1px solid #d1d5db" }}>
+            <MapContainer
+                center={defaultCenter}
+                zoom={defaultZoom}
+                style={{ height: "100%", width: "100%" }}
+                scrollWheelZoom={false}
+            >
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                {pins.map((pin, i) => (
+                    <Marker key={i} position={[pin.lat, pin.lng]}>
+                        {pin.label && <Popup>{pin.label}</Popup>}
+                    </Marker>
+                ))}
+                {pins.length > 0 && <FlyToPin lat={pins[0].lat} lng={pins[0].lng} />}
+            </MapContainer>
         </div>
     );
 };

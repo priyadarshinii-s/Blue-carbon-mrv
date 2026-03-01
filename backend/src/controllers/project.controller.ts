@@ -5,6 +5,8 @@ import { BadRequestError, ForbiddenError, NotFoundError } from '../utils/AppErro
 import { generateProjectId } from '../utils/generateId';
 import { UserRole } from '../types';
 import { logger } from '../utils/logger';
+import { logAudit } from '../services/audit.service';
+import { AuditAction } from '../models/AuditLog';
 
 export const createProject = catchAsync(async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
@@ -24,6 +26,11 @@ export const createProject = catchAsync(async (req: Request, res: Response): Pro
     const project = await Project.create(projectData);
 
     logger.info({ projectId: project.projectId }, 'Project created');
+
+    logAudit(AuditAction.PROJECT_CREATED, req.user.walletAddress, `Project "${project.projectName}" created`, {
+        targetId: project.projectId,
+        meta: { projectName: project.projectName, projectType: project.projectType },
+    });
 
     res.status(201).json({
         success: true,
@@ -95,6 +102,11 @@ export const updateProject = catchAsync(async (req: Request, res: Response): Pro
     }
 
     logger.info({ projectId: project.projectId }, 'Project updated');
+
+    logAudit(AuditAction.PROJECT_UPDATED, req.user?.walletAddress || 'system', `Project "${project.projectName}" updated`, {
+        targetId: project.projectId,
+        meta: { updatedFields: Object.keys(req.body) },
+    });
 
     res.status(200).json({
         success: true,

@@ -5,12 +5,7 @@ const CarbonCalculationForm = ({ onResult }) => {
     const { co2PerTree: defaultCo2 } = useCalculation();
     const [trees, setTrees] = useState("");
     const [survivalRate, setSurvivalRate] = useState("");
-    const [co2PerTree, setCo2PerTree] = useState(defaultCo2.toString());
     const [result, setResult] = useState(null);
-
-    useEffect(() => {
-        setCo2PerTree(defaultCo2.toString());
-    }, [defaultCo2]);
 
     const handleCalculate = () => {
         const t = parseFloat(trees);

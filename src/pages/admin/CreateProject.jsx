@@ -50,7 +50,7 @@ const CreateProject = () => {
         setAllOfficers(users.filter(u => u.role === "FIELD_OFFICER").map(u => ({ wallet: u.walletAddress, name: u.userName || u.walletAddress })));
         setAllValidators(users.filter(u => u.role === "VALIDATOR").map(u => ({ wallet: u.walletAddress, name: u.userName || u.walletAddress })));
       })
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -72,7 +72,7 @@ const CreateProject = () => {
     try {
       const saved = JSON.parse(localStorage.getItem(DRAFT_KEY));
       if (saved) { setForm(saved.form); setStep(saved.step); }
-    } catch { }
+    } catch { /* ignore */ }
     setShowDraftBanner(false);
   };
 
@@ -81,7 +81,23 @@ const CreateProject = () => {
     setShowDraftBanner(false);
   };
 
-  const set = (field, val) => setForm((p) => ({ ...p, [field]: val }));
+  const set = (field, val) => {
+    setForm((p) => ({ ...p, [field]: val }));
+    if (Object.keys(errors).length > 0) {
+      setErrors((prev) => {
+        const errs = { ...prev };
+        if (field === "name" && val.length >= 5) delete errs.name;
+        if (field === "ecosystemType" && val) delete errs.ecosystemType;
+        if (field === "description" && val.length >= 50) delete errs.description;
+        if (field === "location" && val) delete errs.location;
+        if (field === "area" && parseFloat(val) >= 0.1) delete errs.area;
+        if (field === "photos" && val.length >= 3) delete errs.photos;
+        if (field === "startDate" && val) delete errs.startDate;
+        if (field === "endDate" && val >= form.startDate) delete errs.endDate;
+        return errs;
+      });
+    }
+  };
 
   const toggleActivity = (a) =>
     set("activities", form.activities.includes(a)
@@ -137,9 +153,13 @@ const CreateProject = () => {
     if (!validateStep()) return;
     if (step === 2 && form.photos.length > 0) simulateIPFSUpload(form.photos);
     setStep((s) => s + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleBack = () => setStep((s) => s - 1);
+  const handleBack = () => {
+    setStep((s) => s - 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleSaveDraft = () => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, step }));
@@ -218,7 +238,7 @@ const CreateProject = () => {
         <button className="secondary-btn" style={{ fontSize: "13px" }} onClick={handleSaveDraft}>Save Draft</button>
       </div>
 
-      <div className="card wide mt-20" style={{ padding: "28px" }}>
+      <div className="card wide mt-20" style={{ padding: "28px", margin: "0px auto", marginBottom: "20px" }}>
         <ProjectStepper steps={STEPS} currentStep={step} />
 
         {step === 0 && (
@@ -263,26 +283,27 @@ const CreateProject = () => {
 
         {step === 1 && (
           <div>
-            <h3 style={{ marginBottom: "20px", color: "#0f2a44", fontSize: "16px" }}>Project Location & Geofence</h3>
+            <h3 style={{ marginBottom: "20px", color: "#0f2a44", fontSize: "16px" }}>Project Location</h3>
+            <div className="form-group">
+              <label style={{ marginBottom: "10px", display: "block" }}>Search & Select Location</label>
+              <LocationMapWithDraw
+                onLocationChange={(data) => {
+                  if (data.lat) { set("lat", data.lat); set("lng", data.lng); }
+                  if (data.name) set("location", data.name);
+                  if (data.area) set("area", String(data.area));
+                }}
+              />
+            </div>
+
             <div className="form-group">
               <label>Region / Location Name *</label>
               <input
                 type="text"
                 value={form.location}
                 onChange={(e) => set("location", e.target.value)}
-                placeholder="e.g. Pichavaram, Tamil Nadu"
+                placeholder="Auto-filled from map, or type manually"
               />
               {errors.location && <small style={{ color: "#b91c1c" }}>{errors.location}</small>}
-            </div>
-
-            <div className="form-group">
-              <label style={{ marginBottom: "10px", display: "block" }}>Interactive Map & Polygon</label>
-              <LocationMapWithDraw
-                onLocationChange={(data) => {
-                  if (data.lat) { set("lat", data.lat); set("lng", data.lng); }
-                  if (data.area) set("area", String(data.area));
-                }}
-              />
             </div>
 
             <div className="form-group">
@@ -291,11 +312,11 @@ const CreateProject = () => {
                 type="number"
                 value={form.area}
                 onChange={(e) => set("area", e.target.value)}
-                placeholder="Auto-filled from polygon, or enter manually"
+                placeholder="Enter the project area in hectares"
                 min="0.1" step="0.1"
               />
               {errors.area && <small style={{ color: "#b91c1c" }}>{errors.area}</small>}
-              <small className="helper-text">Minimum 0.1 ha required. Polygon auto-calculates this value.</small>
+              <small className="helper-text">Minimum 0.1 ha required.</small>
             </div>
           </div>
         )}

@@ -1,28 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useAuth } from "../../context/AuthContext";
 import { authAPI } from "../../services/api";
 
 const AuthModal = () => {
     const {
         isAuthModalOpen, authModalMode, closeAuthModal, setAuthModalMode,
-        login, loginWithToken, connectWallet, walletAddress, signMessage
+        loginWithToken, signMessage,
+        wagmiAddress, wagmiConnected,
     } = useAuth();
     const navigate = useNavigate();
+    const { openConnectModal } = useConnectModal();
 
     const [connecting, setConnecting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState("");
     const [form, setForm] = useState({
-        fullName: "", email: "", phone: "", organization: "", walletAddress: "", role: "",
+        fullName: "", email: "", phone: "", organization: "",
     });
-
-    const demoUsers = {
-        ADMIN: { role: "ADMIN", email: "admin@nccr.gov.in", name: "Rajesh Kumar", walletAddress: "0x7a3B9f2E0000000000000000000000000000002E" },
-        FIELD: { role: "FIELD", email: "field@ngo.org", name: "Arun Kumar", walletAddress: "0x8b4C3a4B00000000000000000000000000004B00" },
-        VALIDATOR: { role: "VALIDATOR", email: "validator@nccr.gov.in", name: "Priya Sharma", walletAddress: "0x9c5D4a5C00000000000000000000000000005C00" },
-        VIEWER: { role: "VIEWER", email: "community@ngo.org", name: "Meera Patel", walletAddress: "0x0d6E5a6D00000000000000000000000000006D00" },
-    };
+    const [pendingLogin, setPendingLogin] = useState(false);
 
     useEffect(() => {
         if (isAuthModalOpen) {
@@ -34,6 +31,14 @@ const AuthModal = () => {
         }
         return () => { document.body.style.overflow = "unset"; };
     }, [isAuthModalOpen]);
+
+
+    useEffect(() => {
+        if (pendingLogin && wagmiConnected && wagmiAddress) {
+            setPendingLogin(false);
+            performWalletLogin(wagmiAddress.toLowerCase());
+        }
+    }, [wagmiAddress, wagmiConnected, pendingLogin]);
 
     if (!isAuthModalOpen) return null;
 
@@ -49,15 +54,11 @@ const AuthModal = () => {
         navigate(paths[role] || "/user/dashboard");
     };
 
-    const handleWalletConnect = async () => {
+    const performWalletLogin = async (addr) => {
         setConnecting(true);
         setError("");
         try {
-            const addr = await connectWallet();
-            if (!addr) { setConnecting(false); return; }
-
             const { message, signature } = await signMessage(addr);
-
             const res = await authAPI.loginWallet(addr, signature, message);
             const { user, token } = res.data.data;
             loginWithToken(user, token);
@@ -72,6 +73,18 @@ const AuthModal = () => {
             }
         } finally {
             setConnecting(false);
+        }
+    };
+
+    const handleWalletConnect = async () => {
+        setError("");
+        if (wagmiConnected && wagmiAddress) {
+
+            await performWalletLogin(wagmiAddress.toLowerCase());
+        } else {
+
+            setPendingLogin(true);
+            openConnectModal?.();
         }
     };
 
@@ -94,30 +107,33 @@ const AuthModal = () => {
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-    const handleConnectWallet = async () => {
-        const addr = await connectWallet();
-        if (addr) setForm({ ...form, walletAddress: addr });
+    const handleConnectWalletForRegister = () => {
+        if (!wagmiConnected) {
+            openConnectModal?.();
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        if (!form.fullName || !form.email || !form.phone || !form.organization || !form.role) {
+        if (!form.fullName || !form.email || !form.phone || !form.organization) {
             alert("Please fill all required fields"); return;
         }
-        const wallet = form.walletAddress || walletAddress;
+        const wallet = wagmiAddress;
         if (!wallet) {
             alert("Please connect your wallet"); return;
         }
 
         try {
-            await authAPI.register({
-                walletAddress: wallet,
+            const regRes = await authAPI.register({
+                walletAddress: wallet.toLowerCase(),
                 userName: form.fullName,
                 email: form.email,
                 phone: form.phone,
                 organization: form.organization,
             });
+            const { user, token } = regRes.data.data;
+            loginWithToken(user, token);
             setSubmitted(true);
         } catch (err) {
             const msg = err.response?.data?.error?.message || "Registration failed";
@@ -139,14 +155,14 @@ const AuthModal = () => {
                 {submitted ? (
                     <div style={{ textAlign: "center", padding: "16px 0" }}>
                         <div style={{ fontSize: "48px", marginBottom: "16px" }}>✅</div>
-                        <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#1a1a2e", marginBottom: "8px" }}>Registration Submitted</h2>
+                        <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#1a1a2e", marginBottom: "8px" }}>Registration Successful</h2>
                         <p style={{ color: "#6b7280", fontSize: "14px", lineHeight: 1.6, marginBottom: "24px" }}>
-                            Your application has been received.<br />An admin will review and assign your role shortly.
+                            Welcome to the Blue Carbon MRV Registry!<br />You are now logged in.
                         </p>
-                        <button onClick={closeAuthModal} style={{
+                        <button onClick={() => { closeAuthModal(); navigateByRole("USER"); }} style={{
                             width: "100%", padding: "12px", background: "#0f766e", color: "white",
                             border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600, cursor: "pointer",
-                        }}>Done</button>
+                        }}>Go to Dashboard</button>
                     </div>
                 ) : (
                     <>
@@ -185,7 +201,7 @@ const AuthModal = () => {
                                     border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 600,
                                     cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
                                 }}>
-                                    {connecting ? "Connecting…" : <><span>🦊</span>Connect MetaMask</>}
+                                    {connecting ? "Signing in…" : <>🔗 Connect Wallet & Sign In</>}
                                 </button>
 
                                 <div style={{ display: "flex", alignItems: "center", gap: "10px", margin: "18px 0" }}>
@@ -254,28 +270,16 @@ const AuthModal = () => {
                                     </div>
                                 </div>
 
-                                <div style={{ height: "12px" }} />
-
-                                <div className="form-group">
-                                    <label>Primary Role</label>
-                                    <select name="role" value={form.role} onChange={handleChange} required>
-                                        <option value="">Select a role…</option>
-                                        <option value="NGO">Non-Governmental Org</option>
-                                        <option value="COMMUNITY">Local Community</option>
-                                        <option value="PANCHAYAT">Gram Panchayat</option>
-                                    </select>
-                                </div>
-
-                                <div className="form-group" style={{ marginBottom: "20px" }}>
+                                <div className="form-group" style={{ marginBottom: "20px", marginTop: "12px" }}>
                                     <label>Wallet Address</label>
                                     <div style={{ display: "flex", gap: "8px" }}>
-                                        <input type="text" value={walletAddress || form.walletAddress || ""} readOnly
+                                        <input type="text" value={wagmiAddress || ""} readOnly
                                             placeholder="Not connected" style={{ flex: 1, fontFamily: "monospace" }} />
-                                        <button type="button" onClick={handleConnectWallet} style={{
-                                            background: "#0f766e", border: "none", color: "white",
+                                        <button type="button" onClick={handleConnectWalletForRegister} style={{
+                                            background: wagmiConnected ? "#059669" : "#0f766e", border: "none", color: "white",
                                             padding: "0 16px", borderRadius: "8px", fontWeight: 600,
                                             fontSize: "13px", cursor: "pointer", whiteSpace: "nowrap",
-                                        }}>Connect</button>
+                                        }}>{wagmiConnected ? "✓ Connected" : "Connect"}</button>
                                     </div>
                                 </div>
 

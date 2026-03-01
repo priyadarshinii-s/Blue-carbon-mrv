@@ -6,6 +6,8 @@ import { catchAsync } from '../utils/catchAsync';
 import { BadRequestError, ConflictError, NotFoundError, UnauthorizedError } from '../utils/AppError';
 import { IJwtPayload, UserRole, UserStatus } from '../types';
 import { logger } from '../utils/logger';
+import { logAudit } from '../services/audit.service';
+import { AuditAction } from '../models/AuditLog';
 
 export const register = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const { walletAddress, userName, email, phone, organization } = req.body;
@@ -28,6 +30,8 @@ export const register = catchAsync(async (req: Request, res: Response): Promise<
         email: email?.toLowerCase(),
         phone,
         organization,
+        role: UserRole.USER,
+        status: UserStatus.APPROVED,
     });
 
     const payload: IJwtPayload = {
@@ -38,6 +42,11 @@ export const register = catchAsync(async (req: Request, res: Response): Promise<
     const token = signToken(payload);
 
     logger.info({ walletAddress: user.walletAddress }, 'New user registered');
+
+    logAudit(AuditAction.USER_REGISTERED, user.walletAddress, `New user "${userName}" registered`, {
+        targetId: user.walletAddress,
+        meta: { userName, email, organization },
+    });
 
     res.status(201).json({
         success: true,

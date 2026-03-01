@@ -64,6 +64,7 @@ export const verificationsAPI = {
 
 export const adminAPI = {
     getUsers: () => api.get("/admin/users"),
+    createStaffUser: (data) => api.post("/admin/users", data),
     updateRole: (id, role) => api.patch(`/admin/users/${id}/role`, { role }),
     assignProject: (userId, data) =>
         api.patch(`/admin/users/${userId}/assign-project`, data),

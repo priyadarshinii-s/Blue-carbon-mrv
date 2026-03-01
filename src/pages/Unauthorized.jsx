@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 
 const Unauthorized = () => {
     const navigate = useNavigate();
-    const { role, isAuthenticated } = useAuth();
+    const { role } = useAuth();
 
     return (
         <div style={{

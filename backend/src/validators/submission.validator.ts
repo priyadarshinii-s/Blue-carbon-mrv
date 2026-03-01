@@ -13,14 +13,7 @@ export const createSubmissionSchema = z.object({
         .optional(),
     currentPhotos: z.array(z.string()).optional(),
     currentVideos: z.array(z.string()).optional(),
-    siteCondition: z
-        .object({
-            vegetation: z.string().optional(),
-            salinity: z.number().optional(),
-            pH: z.number().optional(),
-            flooding: z.string().optional(),
-        })
-        .optional(),
+    siteCondition: z.record(z.unknown()).optional(),
     restorationLog: z.record(z.unknown()).optional(),
     carbonInputs: z.record(z.unknown()).optional(),
 });

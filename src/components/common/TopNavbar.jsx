@@ -19,8 +19,7 @@ const roleColors = {
 };
 
 const TopNavbar = () => {
-  const { role, user, walletAddress, logout, isAuthenticated, openLogin, openRegister } = useAuth();
-  const navigate = useNavigate();
+  const { role, user, walletAddress, logout, isAuthenticated, openLogin } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
   const [showWallet, setShowWallet] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -123,10 +122,10 @@ const TopNavbar = () => {
                     onMouseOver={(e) => e.target.style.background = "rgba(255,255,255,0.05)"}
                     onMouseOut={(e) => e.target.style.background = "none"}
                   >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.1a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.1a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6c.36 0 .7-.14 1-.33A1.65 1.65 0 0 0 10.33 3H10a2 2 0 1 1 4 0v.1c0 .36.14.7.33 1 .3.19.64.33 1 .33.36 0 .7-.14 1-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.19.3-.33.64-.33 1 0 .36.14.7.33 1 .3.19.64.33 1 .33H21a2 2 0 1 1 0 4h-.1c-.36 0-.7.14-1 .33-.19.3-.33.64-.33 1z"/>
-                  </svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1V21a2 2 0 1 1-4 0v-.1a1.65 1.65 0 0 0-.33-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.33H3a2 2 0 1 1 0-4h.1a1.65 1.65 0 0 0 1-.33 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6c.36 0 .7-.14 1-.33A1.65 1.65 0 0 0 10.33 3H10a2 2 0 1 1 4 0v.1c0 .36.14.7.33 1 .3.19.64.33 1 .33.36 0 .7-.14 1-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.19.3-.33.64-.33 1 0 .36.14.7.33 1 .3.19.64.33 1 .33H21a2 2 0 1 1 0 4h-.1c-.36 0-.7.14-1 .33-.19.3-.33.64-.33 1z" />
+                    </svg>
                     Wallet Settings
                   </button>
                   <button

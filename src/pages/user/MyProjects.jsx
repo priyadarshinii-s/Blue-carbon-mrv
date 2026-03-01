@@ -99,7 +99,23 @@ const MyProjects = () => {
                             <div><strong>Area:</strong> {detail.approximateAreaHa} ha</div>
                             <div><strong>Credits Minted:</strong> {detail.totalCarbonCredits || 0} tCO₂e</div>
                             <div><strong>Started:</strong> {formatDate(detail.startDate)}</div>
-                            {detail.description && <div><strong>Description:</strong> {detail.description}</div>}
+                            <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #e5e7eb" }}>
+                                <strong>Field Officer:</strong>{" "}
+                                {detail.assignedFieldOfficer ? (
+                                    <span style={{ fontFamily: "monospace", fontSize: "13px" }}>{detail.assignedFieldOfficer}</span>
+                                ) : (
+                                    <span style={{ color: "#9ca3af", fontStyle: "italic" }}>Pending Assignment</span>
+                                )}
+                            </div>
+                            <div>
+                                <strong>Validator:</strong>{" "}
+                                {detail.assignedValidator ? (
+                                    <span style={{ fontFamily: "monospace", fontSize: "13px" }}>{detail.assignedValidator}</span>
+                                ) : (
+                                    <span style={{ color: "#9ca3af", fontStyle: "italic" }}>Pending Assignment</span>
+                                )}
+                            </div>
+                            {detail.description && <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #e5e7eb" }}><strong>Description:</strong> {detail.description}</div>}
                         </div>
                     </div>
                 </div>

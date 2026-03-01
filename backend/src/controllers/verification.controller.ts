@@ -7,6 +7,8 @@ import { BadRequestError, ForbiddenError, NotFoundError } from '../utils/AppErro
 import { generateVerificationId } from '../utils/generateId';
 import { SubmissionStatus, VerificationStatus } from '../types';
 import { logger } from '../utils/logger';
+import { logAudit } from '../services/audit.service';
+import { AuditAction } from '../models/AuditLog';
 
 export const getVerificationQueue = catchAsync(async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
@@ -98,6 +100,12 @@ export const reviewSubmission = catchAsync(async (req: Request, res: Response): 
     }
 
     logger.info({ submissionId, status, approvedCredits }, 'Submission reviewed');
+
+    const auditAction = status === 'Approved' ? AuditAction.SUBMISSION_VERIFIED : AuditAction.SUBMISSION_REJECTED;
+    logAudit(auditAction, req.user.walletAddress, `Submission ${submissionId} ${status.toLowerCase()}${approvedCredits ? ` (${approvedCredits} credits)` : ''}`, {
+        targetId: submissionId as string,
+        meta: { projectId: submission.projectId, status, approvedCredits, remarks },
+    });
 
     res.status(200).json({
         success: true,

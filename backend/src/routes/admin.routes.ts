@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
     getUsers,
+    createStaffUser,
     updateUserRole,
     assignUserToProject,
     getMintQueue,
@@ -9,7 +10,7 @@ import {
 import { protect } from '../middlewares/auth';
 import { restrictTo } from '../middlewares/roleGuard';
 import { validate } from '../middlewares/validate';
-import { updateUserRoleSchema, assignProjectSchema, mintSchema } from '../validators/admin.validator';
+import { createStaffUserSchema, updateUserRoleSchema, assignProjectSchema, mintSchema } from '../validators/admin.validator';
 import { UserRole } from '../types';
 
 const router = Router();
@@ -17,6 +18,8 @@ const router = Router();
 router.use(protect, restrictTo(UserRole.ADMIN));
 
 router.get('/users', getUsers);
+
+router.post('/users', validate(createStaffUserSchema), createStaffUser);
 
 router.patch('/users/:id/role', validate(updateUserRoleSchema), updateUserRole);
 

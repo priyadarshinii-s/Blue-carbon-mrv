@@ -10,15 +10,21 @@ export enum AuditAction {
     PROJECT_UPDATED = 'PROJECT_UPDATED',
     ROLE_CHANGED = 'ROLE_CHANGED',
     USER_APPROVED = 'USER_APPROVED',
+    FIELD_OFFICER_ASSIGNED = 'FIELD_OFFICER_ASSIGNED',
+    VALIDATOR_ASSIGNED = 'VALIDATOR_ASSIGNED',
+    USER_REGISTERED = 'USER_REGISTERED',
+    STAFF_CREATED = 'STAFF_CREATED',
 }
 
 export interface IAuditLog {
     timestamp: Date;
     action: AuditAction;
-    userEmail: string;
+    userEmail?: string;
     walletAddress: string;
     txHash?: string;
+    targetId?: string;
     details: string;
+    meta?: Record<string, unknown>;
 }
 
 const auditLogSchema = new Schema<IAuditLog>(
@@ -30,10 +36,12 @@ const auditLogSchema = new Schema<IAuditLog>(
             required: true,
             index: true
         },
-        userEmail: { type: String, required: true },
+        userEmail: { type: String },
         walletAddress: { type: String, required: true, lowercase: true, index: true },
         txHash: { type: String },
+        targetId: { type: String, index: true },
         details: { type: String, required: true },
+        meta: { type: Schema.Types.Mixed },
     },
     {
         timestamps: false,

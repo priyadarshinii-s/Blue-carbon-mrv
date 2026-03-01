@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import StatCard from "../../components/shared/StatCard";
 import StatusBadge from "../../components/shared/StatusBadge";
 import MapComponent from "../../components/shared/MapComponent";
-import { projectsAPI, adminAPI, reportsAPI } from "../../services/api";
+import { projectsAPI, reportsAPI } from "../../services/api";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();

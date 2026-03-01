@@ -13,6 +13,12 @@ const ProjectManagement = () => {
   const [users, setUsers] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [activeTab, setActiveTab] = useState("metadata");
+  const [toast, setToast] = useState({ show: false, message: "", type: "success" });
+
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 3000);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -31,19 +37,27 @@ const ProjectManagement = () => {
   const handleAssignOfficer = async (projectId, officerWallet) => {
     try {
       await projectsAPI.update(projectId, { assignedFieldOfficer: officerWallet });
-    } catch { }
-    setProjects(prev => prev.map(p =>
-      (p._id === projectId || p.projectId === projectId) ? { ...p, assignedFieldOfficer: officerWallet } : p
-    ));
+      setProjects(prev => prev.map(p =>
+        (p.projectId === projectId) ? { ...p, assignedFieldOfficer: officerWallet } : p
+      ));
+      setSelectedProject(prev => prev && prev.projectId === projectId ? { ...prev, assignedFieldOfficer: officerWallet } : prev);
+      showToast("Field Officer assigned successfully!");
+    } catch {
+      showToast("Failed to assign Field Officer.", "error");
+    }
   };
 
   const handleAssignValidator = async (projectId, validatorWallet) => {
     try {
       await projectsAPI.update(projectId, { assignedValidator: validatorWallet });
-    } catch { }
-    setProjects(prev => prev.map(p =>
-      (p._id === projectId || p.projectId === projectId) ? { ...p, assignedValidator: validatorWallet } : p
-    ));
+      setProjects(prev => prev.map(p =>
+        (p.projectId === projectId) ? { ...p, assignedValidator: validatorWallet } : p
+      ));
+      setSelectedProject(prev => prev && prev.projectId === projectId ? { ...prev, assignedValidator: validatorWallet } : prev);
+      showToast("Validator assigned successfully!");
+    } catch {
+      showToast("Failed to assign Validator.", "error");
+    }
   };
 
   if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Loading projects…</div>;
@@ -120,7 +134,7 @@ const ProjectManagement = () => {
                         <button key={o._id}
                           className={selectedProject.assignedFieldOfficer === o.walletAddress ? "primary-btn" : "secondary-btn"}
                           style={{ fontSize: "12px", padding: "6px 14px", borderRadius: "20px" }}
-                          onClick={() => handleAssignOfficer(selectedProject._id || selectedProject.projectId, o.walletAddress)}
+                          onClick={() => handleAssignOfficer(selectedProject.projectId, o.walletAddress)}
                         >{o.userName}</button>
                       ))}
                       {officers.length === 0 && <span style={{ color: "#6b7280", fontSize: "13px" }}>No field officers registered</span>}
@@ -134,7 +148,7 @@ const ProjectManagement = () => {
                         <button key={v._id}
                           className={selectedProject.assignedValidator === v.walletAddress ? "primary-btn" : "secondary-btn"}
                           style={{ fontSize: "12px", padding: "6px 14px", borderRadius: "20px" }}
-                          onClick={() => handleAssignValidator(selectedProject._id || selectedProject.projectId, v.walletAddress)}
+                          onClick={() => handleAssignValidator(selectedProject.projectId, v.walletAddress)}
                         >{v.userName}</button>
                       ))}
                       {validators.length === 0 && <span style={{ color: "#6b7280", fontSize: "13px" }}>No validators registered</span>}
@@ -144,6 +158,18 @@ const ProjectManagement = () => {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {toast.show && (
+        <div style={{
+          position: "fixed", bottom: "24px", right: "24px", zIndex: 9999,
+          background: toast.type === "success" ? "#10b981" : "#ef4444",
+          color: "white", padding: "12px 24px", borderRadius: "8px",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          display: "flex", alignItems: "center", gap: "8px", fontWeight: 500,
+        }}>
+          {toast.type === "success" ? "✅" : "❌"} {toast.message}
         </div>
       )}
     </>

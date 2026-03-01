@@ -4,11 +4,13 @@ import Project from '../models/Project';
 import Verification from '../models/Verification';
 import TokenData from '../models/TokenData';
 import { catchAsync } from '../utils/catchAsync';
-import { BadRequestError, NotFoundError } from '../utils/AppError';
-import { UserRole } from '../types';
+import { BadRequestError, ConflictError, NotFoundError } from '../utils/AppError';
+import { UserRole, UserStatus } from '../types';
 import { generateTokenId } from '../utils/generateId';
 import { uploadJSONToIPFS } from '../services/ipfs.service';
 import { logger } from '../utils/logger';
+import { logAudit } from '../services/audit.service';
+import { AuditAction } from '../models/AuditLog';
 
 export const getUsers = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
@@ -33,6 +35,44 @@ export const getUsers = catchAsync(async (req: Request, res: Response): Promise<
     });
 });
 
+export const createStaffUser = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const { walletAddress, userName, email, phone, organization, role } = req.body;
+
+    const existingUser = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+    if (existingUser) {
+        throw new ConflictError('Wallet address is already registered.');
+    }
+
+    if (email) {
+        const emailExists = await User.findOne({ email: email.toLowerCase() });
+        if (emailExists) {
+            throw new ConflictError('Email is already registered.');
+        }
+    }
+
+    const user = await User.create({
+        walletAddress: walletAddress.toLowerCase(),
+        userName,
+        email: email?.toLowerCase(),
+        phone,
+        organization,
+        role,
+        status: UserStatus.APPROVED,
+    });
+
+    logger.info({ walletAddress: user.walletAddress, role }, 'Staff user created by admin');
+
+    logAudit(AuditAction.STAFF_CREATED, req.user!.walletAddress, `Staff user "${userName}" created with role ${role}`, {
+        targetId: user.walletAddress,
+        meta: { userName, role, organization },
+    });
+
+    res.status(201).json({
+        success: true,
+        data: { user },
+    });
+});
+
 export const updateUserRole = catchAsync(async (req: Request, res: Response): Promise<void> => {
     const { role } = req.body;
 
@@ -45,6 +85,11 @@ export const updateUserRole = catchAsync(async (req: Request, res: Response): Pr
     await user.save();
 
     logger.info({ userId: req.params.id, newRole: role }, 'User role updated');
+
+    logAudit(AuditAction.ROLE_CHANGED, req.user!.walletAddress, `User ${user.walletAddress} role changed to ${role}`, {
+        targetId: user.walletAddress,
+        meta: { previousRole: user.role, newRole: role },
+    });
 
     res.status(200).json({
         success: true,
@@ -81,6 +126,12 @@ export const assignUserToProject = catchAsync(async (req: Request, res: Response
     await project.save();
 
     logger.info({ userId: req.params.id, projectId, role }, 'User assigned to project');
+
+    const auditAction = role === 'FIELD_OFFICER' ? AuditAction.FIELD_OFFICER_ASSIGNED : AuditAction.VALIDATOR_ASSIGNED;
+    logAudit(auditAction, req.user!.walletAddress, `${role === 'FIELD_OFFICER' ? 'Field Officer' : 'Validator'} ${user.walletAddress} assigned to project ${projectId}`, {
+        targetId: projectId,
+        meta: { assignedWallet: user.walletAddress, role },
+    });
 
     res.status(200).json({
         success: true,
@@ -158,6 +209,11 @@ export const mintCredits = catchAsync(async (req: Request, res: Response): Promi
     });
 
     logger.info({ projectId, year, amount, metadataIPFS }, 'Credits minted (placeholder)');
+
+    logAudit(AuditAction.CREDIT_MINTED, req.user!.walletAddress, `Minted ${amount} credits for project ${project.projectName} (${year})`, {
+        targetId: projectId as string,
+        meta: { year, amount, metadataIPFS, projectName: project.projectName },
+    });
 
     res.status(201).json({
         success: true,

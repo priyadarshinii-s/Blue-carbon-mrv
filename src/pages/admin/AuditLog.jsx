@@ -8,9 +8,14 @@ const actionColors = {
     DATA_SUBMITTED: "#b45309",
     USER_APPROVED: "#7c3aed",
     PROJECT_CREATED: "#047857",
+    PROJECT_UPDATED: "#059669",
     SUBMISSION_REJECTED: "#b91c1c",
     ROLE_CHANGED: "#6b7280",
     CREDIT_RETIRED: "#9333ea",
+    FIELD_OFFICER_ASSIGNED: "#0284c7",
+    VALIDATOR_ASSIGNED: "#7c3aed",
+    USER_REGISTERED: "#2563eb",
+    STAFF_CREATED: "#4f46e5",
 };
 
 const AuditLog = () => {
@@ -45,14 +50,19 @@ const AuditLog = () => {
                     <label style={{ fontSize: "12px" }}>Action Type</label>
                     <select value={filterAction} onChange={(e) => setFilterAction(e.target.value)} style={{ width: "auto", padding: "6px 10px" }}>
                         <option value="ALL">All Actions</option>
-                        <option value="CREDIT_MINTED">Credit Minted</option>
+                        <option value="PROJECT_CREATED">Project Created</option>
+                        <option value="PROJECT_UPDATED">Project Updated</option>
+                        <option value="DATA_SUBMITTED">Data Submitted</option>
                         <option value="SUBMISSION_VERIFIED">Submission Verified</option>
                         <option value="SUBMISSION_REJECTED">Submission Rejected</option>
-                        <option value="DATA_SUBMITTED">Data Submitted</option>
-                        <option value="USER_APPROVED">User Approved</option>
-                        <option value="PROJECT_CREATED">Project Created</option>
-                        <option value="ROLE_CHANGED">Role Changed</option>
+                        <option value="CREDIT_MINTED">Credit Minted</option>
                         <option value="CREDIT_RETIRED">Credit Retired</option>
+                        <option value="FIELD_OFFICER_ASSIGNED">Field Officer Assigned</option>
+                        <option value="VALIDATOR_ASSIGNED">Validator Assigned</option>
+                        <option value="USER_REGISTERED">User Registered</option>
+                        <option value="STAFF_CREATED">Staff Created</option>
+                        <option value="ROLE_CHANGED">Role Changed</option>
+                        <option value="USER_APPROVED">User Approved</option>
                     </select>
                 </div>
                 <div className="form-group" style={{ margin: 0, flex: "0 0 auto" }}>
@@ -70,8 +80,8 @@ const AuditLog = () => {
                     <tr>
                         <th>Timestamp</th>
                         <th>Action</th>
-                        <th>User</th>
                         <th>Wallet</th>
+                        <th>Target</th>
                         <th>Tx Hash</th>
                         <th>Details</th>
                     </tr>
@@ -96,8 +106,8 @@ const AuditLog = () => {
                                     {log.action.replace(/_/g, " ")}
                                 </span>
                             </td>
-                            <td style={{ fontSize: "13px" }}>{log.userEmail}</td>
                             <td style={{ fontSize: "11px", fontFamily: "monospace" }}>{log.walletAddress}</td>
+                            <td style={{ fontSize: "11px", fontFamily: "monospace", color: "#0f766e" }}>{log.targetId || "—"}</td>
                             <td>
                                 {log.txHash && log.txHash !== "—" ? (
                                     <a

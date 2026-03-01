@@ -6,6 +6,8 @@ import { BadRequestError, ForbiddenError, NotFoundError } from '../utils/AppErro
 import { generateSubmissionId } from '../utils/generateId';
 import { UserRole } from '../types';
 import { logger } from '../utils/logger';
+import { logAudit } from '../services/audit.service';
+import { AuditAction } from '../models/AuditLog';
 
 export const createSubmission = catchAsync(async (req: Request, res: Response): Promise<void> => {
     if (!req.user) {
@@ -37,6 +39,11 @@ export const createSubmission = catchAsync(async (req: Request, res: Response): 
     });
 
     logger.info({ submissionId, projectId }, 'Field data submitted');
+
+    logAudit(AuditAction.DATA_SUBMITTED, req.user.walletAddress, `Field data submitted for project ${projectId}`, {
+        targetId: submissionId,
+        meta: { projectId, survivingTrees: req.body.survivingTrees },
+    });
 
     res.status(201).json({
         success: true,
