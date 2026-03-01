@@ -4,7 +4,7 @@
     "description": "Blockchain-Powered Blue Carbon MRV Registry - Backend API",
     "main": "dist/server.js",
     "scripts": {
-        "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
+        "dev": "tsx watch src/server.ts",
         "build": "tsc",
         "start": "node dist/server.js",
         "typecheck": "tsc --noEmit"
