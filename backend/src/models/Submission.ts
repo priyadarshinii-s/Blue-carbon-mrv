@@ -24,6 +24,7 @@ const submissionSchema = new Schema<ISubmission>(
         visitDate: {
             type: Date,
             required: [true, 'Visit date is required'],
+            default: Date.now,
         },
         survivingTrees: {
             type: Number,
