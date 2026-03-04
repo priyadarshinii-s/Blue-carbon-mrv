@@ -74,6 +74,11 @@ export const reviewSubmission = catchAsync(async (req: Request, res: Response): 
         submission.status = SubmissionStatus.REJECTED;
     }
     submission.validatorComments = remarks || '';
+
+    if (!submission.visitDate) {
+        submission.visitDate = submission.createdAt || new Date();
+    }
+
     await submission.save();
 
     let verification = null;
