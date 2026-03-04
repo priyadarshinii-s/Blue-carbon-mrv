@@ -25,7 +25,7 @@ export const createSubmission = catchAsync(async (req: Request, res: Response): 
         throw new ForbiddenError('You are not the assigned field officer for this project.');
     }
 
-    if (project.status !== 'ACTIVE') {
+    if (project.status !== 'PENDING') {
         throw new BadRequestError('Submissions can only be made for ACTIVE projects.');
     }
 
