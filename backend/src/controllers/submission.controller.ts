@@ -35,7 +35,7 @@ export const createSubmission = catchAsync(async (req: Request, res: Response): 
         ...req.body,
         submissionId,
         fieldOfficerWallet: req.user.walletAddress,
-        visitDate: new Date(req.body.visitDate),
+        visitDate: new Date(),
     });
 
     logger.info({ submissionId, projectId }, 'Field data submitted');

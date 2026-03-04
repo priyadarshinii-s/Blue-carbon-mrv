@@ -74,7 +74,7 @@ const NewSubmission = () => {
 
   const [form, setForm] = useState({
     projectId: preselectedProject,
-    dateOfVisit: new Date().toISOString().split("T")[0],
+
     gpsLat: "",
     gpsLng: "",
     primaryMetricValue: "",
@@ -210,7 +210,6 @@ const NewSubmission = () => {
 
     const payload = {
       projectId: form.projectId,
-      visitDate: form.dateOfVisit,
       survivingTrees,
       survivalRate,
       gps: { lat: parseFloat(form.gpsLat), lng: parseFloat(form.gpsLng) },
@@ -260,10 +259,6 @@ const NewSubmission = () => {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-          <div className="form-group">
-            <label>Date of Visit</label>
-            <input type="date" name="dateOfVisit" value={form.dateOfVisit} onChange={handleChange} />
-          </div>
 
           <div className="form-group">
             <label>{config.primaryMetric.label} *</label>
