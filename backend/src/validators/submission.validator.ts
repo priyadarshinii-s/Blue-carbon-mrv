@@ -2,7 +2,10 @@ import { z } from 'zod';
 
 export const createSubmissionSchema = z.object({
     projectId: z.string().min(1, 'Project ID is required'),
-    visitDate: z.string().datetime({ message: 'Valid visit date is required' }),
+    visitDate: z.string().refine(
+        (val) => !isNaN(Date.parse(val)),
+        { message: 'Valid visit date is required' }
+    ),
     survivingTrees: z.number().int().nonnegative().optional(),
     survivalRate: z.number().min(0).max(100).optional(),
     gps: z
