@@ -9,15 +9,18 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ projects: 0, pendingSubs: 0, credits: 0, officers: 0, co2: 0 });
   const [recentSubmissions, setRecentSubmissions] = useState([]);
+  const [mapPins, setMapPins] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       reportsAPI.getDashboardStats().catch(() => ({ data: { data: {} } })),
       projectsAPI.getAll({ limit: 5 }).catch(() => ({ data: { data: { projects: [] } } })),
-    ]).then(([statsRes, projRes]) => {
+      projectsAPI.getMapPins().catch(() => ({ data: { data: { pins: [] } } })),
+    ]).then(([statsRes, projRes, pinsRes]) => {
       const statsData = statsRes.data.data || {};
       const projects = projRes.data.data.projects || [];
+      const fetchedPins = pinsRes.data.data.pins || [];
 
       setStats({
         projects: statsData.projects || 0,
@@ -37,6 +40,7 @@ const AdminDashboard = () => {
           status: p.status.toLowerCase(),
         }))
       );
+      setMapPins(fetchedPins);
       setLoading(false);
     });
   }, []);
@@ -87,11 +91,7 @@ const AdminDashboard = () => {
       <div className="mt-30">
         <h2 style={{ fontSize: "18px", marginBottom: "12px" }}>Active Projects Map</h2>
         <MapComponent
-          pins={[
-            { lat: 11.12, lng: 78.65 },
-            { lat: 10.85, lng: 76.27 },
-            { lat: 20.94, lng: 85.09 },
-          ]}
+          pins={mapPins}
           height="280px"
         />
       </div>

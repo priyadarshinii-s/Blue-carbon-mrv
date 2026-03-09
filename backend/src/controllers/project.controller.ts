@@ -125,3 +125,42 @@ export const getPublicProjects = catchAsync(async (_req: Request, res: Response)
         data: { projects },
     });
 });
+
+export const getPublicMapPins = catchAsync(async (_req: Request, res: Response): Promise<void> => {
+    const projects = await Project.aggregate([
+        { $match: { status: { $in: ['ACTIVE', 'COMPLETED', 'VALIDATED', 'SUBMITTED', 'PENDING'] } } },
+        {
+            $lookup: {
+                from: 'submissions',
+                localField: 'projectId',
+                foreignField: 'projectId',
+                as: 'submissions'
+            }
+        },
+        {
+            $project: {
+                projectId: 1,
+                projectName: 1,
+                status: 1,
+                submissionWithGps: {
+                    $arrayElemAt: [
+                        { $filter: { input: '$submissions', as: 'sub', cond: { $and: [{ $ne: ['$$sub.gps.lat', null] }, { $ne: ['$$sub.gps.lng', null] }] } } },
+                        0
+                    ]
+                }
+            }
+        },
+        { $match: { submissionWithGps: { $ne: null } } }
+    ]);
+
+    const pins = projects.map(p => ({
+        lat: p.submissionWithGps.gps.lat,
+        lng: p.submissionWithGps.gps.lng,
+        label: `${p.projectName} (${p.status})`
+    }));
+
+    res.status(200).json({
+        success: true,
+        data: { pins },
+    });
+});

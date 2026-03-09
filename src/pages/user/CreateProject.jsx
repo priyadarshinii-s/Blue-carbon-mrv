@@ -72,9 +72,9 @@ const UserCreateProject = () => {
         if (Object.keys(errors).length > 0) {
             setErrors((prev) => {
                 const errs = { ...prev };
-                if (field === "name" && val.length >= 5) delete errs.name;
+                if (field === "name" && (val?.length || 0) >= 5) delete errs.name;
                 if (field === "ecosystemType" && val) delete errs.ecosystemType;
-                if (field === "description" && val.length >= 50) delete errs.description;
+                if (field === "description" && (val?.length || 0) >= 50) delete errs.description;
                 if (field === "location" && val) delete errs.location;
                 if (field === "area" && parseFloat(val) >= 0.1) delete errs.area;
                 if (field === "photos" && val.length >= 3) delete errs.photos;
@@ -226,7 +226,7 @@ const UserCreateProject = () => {
                     <div>
                         <h3 style={{ marginBottom: "20px", color: "#0f2a44", fontSize: "16px" }}>Tell us about your project</h3>
                         <div className="form-group">
-                            <label>Project Name * <span style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 400 }}>({form.name.length}/100)</span></label>
+                            <label>Project Name * <span style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 400 }}>({(form.name || "").length}/100)</span></label>
                             <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Pichavaram Mangrove Restoration" maxLength={100} />
                             {errors.name && <small style={{ color: "#b91c1c" }}>{errors.name}</small>}
                         </div>
@@ -238,7 +238,7 @@ const UserCreateProject = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Project Description * <span style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 400 }}>({form.description.length}/800)</span></label>
+                            <label>Project Description * <span style={{ fontSize: "11px", color: "#9ca3af", fontWeight: 400 }}>({(form.description || "").length}/800)</span></label>
                             <textarea
                                 value={form.description}
                                 onChange={(e) => set("description", e.target.value)}

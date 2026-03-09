@@ -60,7 +60,7 @@ export const exportCSV = catchAsync(async (req: Request, res: Response): Promise
 
 export const getNDCReport = catchAsync(async (_req: Request, res: Response): Promise<void> => {
     const projectStats = await Project.aggregate([
-        { $match: { status: { $in: ['ACTIVE', 'COMPLETED'] } } },
+        { $match: { status: { $in: ['VALIDATED', 'ACTIVE', 'COMPLETED'] } } },
         {
             $group: {
                 _id: '$projectType',
@@ -168,9 +168,9 @@ export const getDashboardStats = catchAsync(async (req: Request, res: Response):
     }
 
     const [publicProjects, globalCredits] = await Promise.all([
-        Project.countDocuments({ status: 'ACTIVE' }),
+        Project.countDocuments({ status: { $in: ['VALIDATED', 'ACTIVE'] } }),
         Project.aggregate([
-            { $match: { status: 'ACTIVE' } },
+            { $match: { status: { $in: ['VALIDATED', 'ACTIVE'] } } },
             { $group: { _id: null, total: { $sum: '$totalCarbonCredits' } } }
         ]),
     ]);

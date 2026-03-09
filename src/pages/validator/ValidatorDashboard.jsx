@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StatCard from "../../components/shared/StatCard";
 import StatusBadge from "../../components/shared/StatusBadge";
-import { verificationsAPI, reportsAPI } from "../../services/api";
+import MapComponent from "../../components/shared/MapComponent";
+import { verificationsAPI, reportsAPI, projectsAPI } from "../../services/api";
 
 const ValidatorDashboard = () => {
   const navigate = useNavigate();
   const [activity, setActivity] = useState([]);
   const [stats, setStats] = useState({ queue: 0, verified: 0, rejected: 0, avgTime: "–" });
+  const [mapPins, setMapPins] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,6 +39,16 @@ const ValidatorDashboard = () => {
         trees: sub.survivingTrees || 0,
         status: sub.status.toLowerCase()
       })));
+
+      const pins = submissions
+        .filter(sub => sub.gps && sub.gps.lat && sub.gps.lng)
+        .map(sub => ({
+          lat: sub.gps.lat,
+          lng: sub.gps.lng,
+          label: `Project: ${sub.projectId} (${sub.status})`
+        }));
+      setMapPins(pins);
+
       setLoading(false);
     });
   }, []);
@@ -59,6 +71,13 @@ const ValidatorDashboard = () => {
           Open Verification Queue
         </button>
       </div>
+
+      {mapPins.length > 0 && (
+        <div className="mt-30">
+          <h2 style={{ fontSize: "18px", marginBottom: "12px" }}>Submissions Awaiting Verification Map</h2>
+          <MapComponent pins={mapPins} height="280px" />
+        </div>
+      )}
 
       <div className="mt-30">
         <h2 style={{ fontSize: "18px", marginBottom: "12px" }}>Recent Activity (Queue)</h2>

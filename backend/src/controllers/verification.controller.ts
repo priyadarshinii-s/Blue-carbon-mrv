@@ -95,13 +95,18 @@ export const reviewSubmission = catchAsync(async (req: Request, res: Response): 
             finalized: false,
         });
 
-        if (status === 'Approved' && approvedCredits) {
+        if (status === 'Approved') {
+            const updateOps: Record<string, unknown> = {
+                $set: { status: 'VALIDATED' },
+            };
+            if (approvedCredits) {
+                updateOps.$inc = { totalCarbonCredits: approvedCredits };
+            }
             await Project.findOneAndUpdate(
                 { projectId: submission.projectId },
-                { $inc: { totalCarbonCredits: approvedCredits } }
+                updateOps
             );
         }
-
     }
 
     logger.info({ submissionId, status, approvedCredits }, 'Submission reviewed');

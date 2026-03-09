@@ -289,7 +289,7 @@ const NewSubmission = () => {
 
         <div className="form-group">
           <MapComponent
-            pins={form.gpsLat ? [{ lat: parseFloat(form.gpsLat), lng: parseFloat(form.gpsLng) }] : []}
+            pins={(form.gpsLat && form.gpsLng && !isNaN(parseFloat(form.gpsLat)) && !isNaN(parseFloat(form.gpsLng))) ? [{ lat: parseFloat(form.gpsLat), lng: parseFloat(form.gpsLng) }] : []}
             height="200px"
           />
         </div>

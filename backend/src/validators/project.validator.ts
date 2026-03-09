@@ -18,7 +18,7 @@ export const createProjectSchema = z.object({
     plannedActivities: z.array(z.string()).optional(),
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime().optional(),
-    status: z.enum(['PENDING', 'ACTIVE', 'REJECTED', 'COMPLETED']).optional(),
+    status: z.enum(['PENDING', 'SUBMITTED', 'VALIDATED', 'ACTIVE', 'REJECTED', 'COMPLETED']).optional(),
     assignedFieldOfficer: z.string().optional(),
     assignedValidator: z.string().optional(),
 });
@@ -41,7 +41,7 @@ export const updateProjectSchema = z.object({
     plannedActivities: z.array(z.string()).optional(),
     startDate: z.string().datetime().optional(),
     endDate: z.string().datetime().optional(),
-    status: z.enum(['PENDING', 'ACTIVE', 'REJECTED', 'COMPLETED']).optional(),
+    status: z.enum(['PENDING', 'SUBMITTED', 'VALIDATED', 'ACTIVE', 'REJECTED', 'COMPLETED']).optional(),
     assignedFieldOfficer: z.string().optional(),
     assignedValidator: z.string().optional(),
 });

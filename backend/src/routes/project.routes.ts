@@ -5,6 +5,7 @@ import {
     getProject,
     updateProject,
     getPublicProjects,
+    getPublicMapPins,
 } from '../controllers/project.controller';
 import { protect } from '../middlewares/auth';
 import { restrictTo } from '../middlewares/roleGuard';
@@ -15,6 +16,7 @@ import { UserRole } from '../types';
 const router = Router();
 
 router.get('/public', getPublicProjects);
+router.get('/public/pins', getPublicMapPins);
 
 router.use(protect);
 

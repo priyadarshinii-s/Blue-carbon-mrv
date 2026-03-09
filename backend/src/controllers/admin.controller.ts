@@ -143,7 +143,7 @@ export const getMintQueue = catchAsync(async (_req: Request, res: Response): Pro
 
     const projects = await Project.find({
         totalCarbonCredits: { $gt: 0 },
-        status: { $in: ['ACTIVE', 'COMPLETED'] },
+        status: { $in: ['VALIDATED', 'ACTIVE', 'COMPLETED'] },
     }).sort({ totalCarbonCredits: -1 });
 
     const mintQueue = await Promise.all(
@@ -209,6 +209,14 @@ export const mintCredits = catchAsync(async (req: Request, res: Response): Promi
     });
 
     logger.info({ projectId, year, amount, metadataIPFS }, 'Credits minted (placeholder)');
+
+    // Transition project from VALIDATED to ACTIVE after minting
+    if (project.status === 'VALIDATED') {
+        await Project.findOneAndUpdate(
+            { projectId },
+            { $set: { status: 'ACTIVE' } }
+        );
+    }
 
     logAudit(AuditAction.CREDIT_MINTED, req.user!.walletAddress, `Minted ${amount} credits for project ${project.projectName} (${year})`, {
         targetId: projectId as string,

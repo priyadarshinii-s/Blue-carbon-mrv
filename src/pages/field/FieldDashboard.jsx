@@ -1,27 +1,53 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StatCard from "../../components/shared/StatCard";
-import { projectsAPI, reportsAPI } from "../../services/api";
+import MapComponent from "../../components/shared/MapComponent";
+import { projectsAPI, reportsAPI, submissionsAPI } from "../../services/api";
 
 const FieldDashboard = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [stats, setStats] = useState({ assigned: 0, submissions: 0, pending: 0, credits: 0 });
+  const [mapPins, setMapPins] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
       projectsAPI.getAll({ role: "FIELD" }).catch(() => ({ data: { data: { projects: [] } } })),
       reportsAPI.getDashboardStats().catch(() => ({ data: { data: {} } })),
-    ]).then(([projRes, statsRes]) => {
-      setProjects(projRes.data.data.projects || []);
+      submissionsAPI.getMy().catch(() => ({ data: { data: { submissions: [] } } })),
+    ]).then(([projRes, statsRes, subRes]) => {
+      const projects = projRes.data.data.projects || [];
+      setProjects(projects);
       const s = statsRes.data.data || {};
+      const submissions = subRes.data.data.submissions || [];
       setStats({
         assigned: s.assignedProjects || 0,
         submissions: s.mySubmissions || 0,
         pending: s.pendingApproval || 0,
         credits: 0,
       });
+
+      // Extract unique map pins from submissions for assigned projects
+      const pins = [];
+      const projectNames = {};
+      projects.forEach(p => projectNames[p.projectId] = p.projectName);
+
+      // We only need one pin per project, so we'll use a set to track
+      const mappedProjects = new Set();
+
+      submissions.forEach(sub => {
+        if (sub.gps && sub.gps.lat && sub.gps.lng && !mappedProjects.has(sub.projectId)) {
+          pins.push({
+            lat: sub.gps.lat,
+            lng: sub.gps.lng,
+            label: `${projectNames[sub.projectId] || sub.projectId} (My Submission)`
+          });
+          mappedProjects.add(sub.projectId);
+        }
+      });
+
+      setMapPins(pins);
       setLoading(false);
     });
   }, []);
@@ -44,6 +70,13 @@ const FieldDashboard = () => {
           New Submission
         </button>
       </div>
+
+      {mapPins.length > 0 && (
+        <div className="mt-30">
+          <h2 style={{ fontSize: "18px", marginBottom: "12px" }}>My Project Locations</h2>
+          <MapComponent pins={mapPins} height="280px" />
+        </div>
+      )}
 
       <div className="mt-30">
         <h2 style={{ fontSize: "18px", marginBottom: "16px" }}>My Assigned Projects</h2>

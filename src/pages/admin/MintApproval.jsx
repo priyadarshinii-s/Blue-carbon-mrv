@@ -48,7 +48,10 @@ const MintApproval = () => {
   const handleMint = async () => {
     setTxModal({ open: true, status: "pending", txHash: "" });
     try {
-      const res = await adminAPI.mint(selectedItem.projectId);
+      const res = await adminAPI.mint(selectedItem.projectId, {
+        year: new Date().getFullYear().toString(),
+        amount: selectedItem.co2,
+      });
       const txHash = res.data?.data?.mintTxHash || "0x" + Math.random().toString(16).slice(2, 42) + Math.random().toString(16).slice(2, 28);
       setTxModal({ open: true, status: "success", txHash });
       setMintQueue(prev => prev.filter(q => q.id !== selectedItem.id));

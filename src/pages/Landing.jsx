@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { reportsAPI } from "../services/api";
+import { reportsAPI, projectsAPI } from "../services/api";
+import MapComponent from "../components/shared/MapComponent";
 
 const SLIDES = ["/mangrove.jpg", "/saltmarsh.jpg", "/seagrass.jpg"];
 const INTERVAL_MS = 5000;
@@ -16,6 +17,7 @@ const Landing = () => {
         co2: 0,
         credits: 0
     });
+    const [mapPins, setMapPins] = useState([]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -33,6 +35,12 @@ const Landing = () => {
                 });
             })
             .catch(err => console.error("Error fetching landing stats:", err));
+
+        projectsAPI.getMapPins()
+            .then(res => {
+                setMapPins(res.data.data.pins || []);
+            })
+            .catch(err => console.error("Error fetching map pins:", err));
 
         return () => clearInterval(timer);
     }, []);
@@ -218,28 +226,25 @@ const Landing = () => {
 
             <div style={{ padding: "0 40px 60px", maxWidth: "1000px", margin: "0 auto" }}>
                 <h2 style={{ textAlign: "center", marginBottom: "20px", fontSize: "24px" }}>Active Projects Map</h2>
-                <div style={{
-                    height: "300px", background: "#e8f0f8", borderRadius: "8px",
-                    border: "1px solid #d1d5db", display: "flex", alignItems: "center",
-                    justifyContent: "center", color: "#6b7280", position: "relative", overflow: "hidden",
-                }}>
+                {mapPins.length > 0 ? (
+                    <MapComponent pins={mapPins} height="400px" />
+                ) : (
                     <div style={{
-                        position: "absolute", inset: 0, opacity: 0.1,
-                        backgroundImage: "linear-gradient(#0f2a44 1px, transparent 1px), linear-gradient(90deg, #0f2a44 1px, transparent 1px)",
-                        backgroundSize: "50px 50px",
-                    }} />
-                    <div style={{ textAlign: "center", zIndex: 1 }}>
-                        <span style={{ fontSize: "48px" }}>🗺️</span>
-                        <p style={{ marginTop: "8px", fontSize: "14px" }}>Public project map – 24 active projects across India</p>
-                        <div style={{ display: "flex", gap: "20px", justifyContent: "center", marginTop: "12px", fontSize: "13px" }}>
-                            <span>📍 Tamil Nadu (8)</span>
-                            <span>📍 Kerala (5)</span>
-                            <span>📍 Odisha (4)</span>
-                            <span>📍 Gujarat (4)</span>
-                            <span>📍 West Bengal (3)</span>
+                        height: "300px", background: "#e8f0f8", borderRadius: "8px",
+                        border: "1px solid #d1d5db", display: "flex", alignItems: "center",
+                        justifyContent: "center", color: "#6b7280", position: "relative", overflow: "hidden",
+                    }}>
+                        <div style={{
+                            position: "absolute", inset: 0, opacity: 0.1,
+                            backgroundImage: "linear-gradient(#0f2a44 1px, transparent 1px), linear-gradient(90deg, #0f2a44 1px, transparent 1px)",
+                            backgroundSize: "50px 50px",
+                        }} />
+                        <div style={{ textAlign: "center", zIndex: 1 }}>
+                            <span style={{ fontSize: "48px" }}>🗺️</span>
+                            <p style={{ marginTop: "8px", fontSize: "14px" }}>Public project map – {statsData.projects} active projects</p>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <div style={{ background: "#0f2a44", color: "#cfd8e3", textAlign: "center", padding: "20px", fontSize: "13px" }}>

@@ -25,8 +25,8 @@ export const createSubmission = catchAsync(async (req: Request, res: Response): 
         throw new ForbiddenError('You are not the assigned field officer for this project.');
     }
 
-    if (project.status !== 'PENDING') {
-        throw new BadRequestError('Submissions can only be made for ACTIVE projects.');
+    if (project.status !== 'PENDING' && project.status !== 'SUBMITTED') {
+        throw new BadRequestError('Submissions can only be made for PENDING or SUBMITTED projects.');
     }
 
     const submissionId = generateSubmissionId();
@@ -39,6 +39,14 @@ export const createSubmission = catchAsync(async (req: Request, res: Response): 
     });
 
     logger.info({ submissionId, projectId }, 'Field data submitted');
+
+    // Transition project status from PENDING to SUBMITTED on first submission
+    if (project.status === 'PENDING') {
+        await Project.findOneAndUpdate(
+            { projectId },
+            { $set: { status: 'SUBMITTED' } }
+        );
+    }
 
     logAudit(AuditAction.DATA_SUBMITTED, req.user.walletAddress, `Field data submitted for project ${projectId}`, {
         targetId: submissionId,

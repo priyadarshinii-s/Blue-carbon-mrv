@@ -60,34 +60,34 @@ const ProjectManagement = () => {
     }
   };
 
+
   if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Loading projects…</div>;
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-        <div><h1>Project Management</h1></div>
-        <button className="primary-btn" onClick={() => navigate("/admin/projects/create")} style={{ padding: "10px 24px" }}>+ Create New Project</button>
+      <div style={{ marginBottom: "24px" }}>
+        <h1>Project Management</h1>
       </div>
 
-      <div className="list-container" style={{ background: "white", padding: "0" }}>
+      <div className="card" style={{ padding: "0", overflow: "auto" }}>
         <table className="table">
           <thead>
             <tr>
-              <th>Project Name</th><th>Type</th><th>Location</th><th>Status</th><th>Credits</th><th>Area (ha)</th><th>Officer</th><th>Validator</th><th>Action</th>
+              <th>Project Name</th><th>Type</th><th>Location</th><th>Status</th><th>Credits</th><th>Area (ha)</th><th>Officer</th><th>Validator</th><th style={{ textAlign: "center" }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {projects.map((p) => (
               <tr key={p._id || p.projectId}>
-                <td style={{ fontWeight: 600 }}>{p.projectName}</td>
+                <td style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{p.projectName}</td>
                 <td>{p.projectType}</td>
                 <td>{p.location}</td>
                 <td><StatusBadge status={p.status?.toLowerCase()} /></td>
                 <td>{p.totalCarbonCredits || 0}</td>
                 <td>{p.approximateAreaHa}</td>
-                <td style={{ fontSize: "12px" }}>{p.assignedFieldOfficer || "–"}</td>
-                <td style={{ fontSize: "12px" }}>{p.assignedValidator || "–"}</td>
-                <td>
+                <td style={{ fontSize: "12px", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.assignedFieldOfficer || ""}>{p.assignedFieldOfficer ? `${p.assignedFieldOfficer.slice(0, 6)}…${p.assignedFieldOfficer.slice(-4)}` : "–"}</td>
+                <td style={{ fontSize: "12px", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.assignedValidator || ""}>{p.assignedValidator ? `${p.assignedValidator.slice(0, 6)}…${p.assignedValidator.slice(-4)}` : "–"}</td>
+                <td style={{ textAlign: "center" }}>
                   <button className="secondary-btn" style={{ fontSize: "12px", padding: "5px 12px" }}
                     onClick={() => { setSelectedProject(p); setActiveTab("metadata"); }}>Manage</button>
                 </td>

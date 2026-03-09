@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = import.meta.env.VITE_API_URL || "https://blue-carbon-mrv-zs76.onrender.com/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const api = axios.create({
     baseURL: API_BASE,
@@ -44,6 +44,7 @@ export const authAPI = {
 export const projectsAPI = {
     getAll: (params) => api.get("/projects", { params }),
     getPublic: () => api.get("/projects/public"),
+    getMapPins: () => api.get("/projects/public/pins"),
     getById: (id) => api.get(`/projects/${id}`),
     create: (data) => api.post("/projects", data),
     update: (id, data) => api.patch(`/projects/${id}`, data),
@@ -69,7 +70,7 @@ export const adminAPI = {
     assignProject: (userId, data) =>
         api.patch(`/admin/users/${userId}/assign-project`, data),
     getMintQueue: () => api.get("/admin/mint-queue"),
-    mint: (projectId) => api.post(`/admin/mint/${projectId}`),
+    mint: (projectId, data) => api.post(`/admin/mint/${projectId}`, data),
 };
 
 export const reportsAPI = {

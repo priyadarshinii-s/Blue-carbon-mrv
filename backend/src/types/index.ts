@@ -22,6 +22,8 @@ export enum ProjectType {
 
 export enum ProjectStatus {
     PENDING = 'PENDING',
+    SUBMITTED = 'SUBMITTED',
+    VALIDATED = 'VALIDATED',
     ACTIVE = 'ACTIVE',
     REJECTED = 'REJECTED',
     COMPLETED = 'COMPLETED',
