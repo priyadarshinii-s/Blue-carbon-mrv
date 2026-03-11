@@ -38,6 +38,56 @@ const Reports = () => {
 
   const totalCredits = filteredData.reduce((sum, d) => sum + (d.credits || 0), 0);
 
+  let exportData = [];
+  let exportFilename = "export.csv";
+
+  if (activeReport === "ledger") {
+    exportData = filteredData.map(d => ({
+      Project: d.projectName,
+      Year: d.year,
+      Ecosystem: d.projectType,
+      "Credits (tCO₂e)": d.credits,
+      Status: d.status
+    }));
+    if (exportData.length > 0) {
+      exportData.push({
+        Project: "",
+        Year: "",
+        Ecosystem: "TOTAL",
+        "Credits (tCO₂e)": totalCredits,
+        Status: ""
+      });
+    }
+    exportFilename = "ledger_report.csv";
+  } else if (activeReport === "ndc" && ndcData) {
+    exportData = (ndcData.byEcosystem || []).map(e => ({
+      "Ecosystem": e._id,
+      Projects: e.totalProjects,
+      Hectares: e.totalAreaHa,
+      "Credits (tCO₂e)": e.totalCredits
+    }));
+    if (exportData.length > 0) {
+      const ndcTotalCredits = (ndcData.byEcosystem || []).reduce((sum, e) => sum + (e.totalCredits || 0), 0);
+      exportData.push({
+        "Ecosystem": "",
+        Projects: "",
+        Hectares: "TOTAL",
+        "Credits (tCO₂e)": ndcTotalCredits
+      });
+    }
+    exportFilename = "ndc_compliance.csv";
+  } else if (activeReport === "performance") {
+    exportData = officerPerformance.map(o => ({
+      "Field Officer": `${o.name} (${o.wallet})`,
+      "Total Submissions": o.totalSubmissions,
+      Approved: o.approved,
+      Rejected: o.rejected,
+      Pending: o.pending,
+      "Approval Rate": `${Math.round(o.approvalRate)}%`
+    }));
+    exportFilename = "officer_performance.csv";
+  }
+
   return (
     <>
       <h1>Reports & Exports</h1>
@@ -89,7 +139,7 @@ const Reports = () => {
             </div>
           </>
         )}
-        <ExportButtons />
+        <ExportButtons data={exportData} filename={exportFilename} />
       </div>
 
       {loading ? (
@@ -139,7 +189,7 @@ const Reports = () => {
               </div>
               <div>
                 <div style={{ color: "#6b7280", fontSize: "12px" }}>Contributions Tracked</div>
-                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#0f766e" }}>{ndcData.submissions?.approved || 0} sub.</div>
+                <div style={{ fontSize: "24px", fontWeight: "bold", color: "#0f766e"}}>{ndcData.submissions?.approved || 0}</div>
               </div>
               <div>
                 <div style={{ color: "#6b7280", fontSize: "12px" }}>Ecosystems</div>

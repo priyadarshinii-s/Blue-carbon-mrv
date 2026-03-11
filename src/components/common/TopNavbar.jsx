@@ -73,8 +73,6 @@ const TopNavbar = () => {
               {copied && <span style={{ color: "#2dd4bf", fontSize: "11px" }}>Copied!</span>}
             </div>
 
-            <NotificationBell />
-
             <div style={{ position: "relative" }}>
               <button
                 onClick={() => setShowProfile(!showProfile)}
