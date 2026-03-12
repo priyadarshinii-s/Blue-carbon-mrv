@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const API_BASE = process.env.API_URL|| "http://localhost:5000/api";
-
+const API_BASE = "https://blue-carbon-mrv-zs76.onrender.com";
 const api = axios.create({
     baseURL: API_BASE,
     headers: { "Content-Type": "application/json" },
