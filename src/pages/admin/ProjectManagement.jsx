@@ -34,6 +34,15 @@ const ProjectManagement = () => {
   const officers = users.filter(u => u.role === "FIELD_OFFICER");
   const validators = users.filter(u => u.role === "VALIDATOR");
 
+  // Helper to map wallet address to user name
+  const walletName = (wallet) => {
+    if (!wallet) return "–";
+    const user = users.find(u => u.walletAddress === wallet || u.walletAddress?.toLowerCase() === wallet?.toLowerCase());
+    const name = user?.userName;
+    const short = `${wallet.slice(0, 6)}…${wallet.slice(-4)}`;
+    return name ? `${name} (${short})` : short;
+  };
+
   const handleAssignOfficer = async (projectId, officerWallet) => {
     try {
       await projectsAPI.update(projectId, { assignedFieldOfficer: officerWallet });
@@ -85,11 +94,15 @@ const ProjectManagement = () => {
                 <td><StatusBadge status={p.status?.toLowerCase()} /></td>
                 <td>{p.totalCarbonCredits || 0}</td>
                 <td>{p.approximateAreaHa}</td>
-                <td style={{ fontSize: "12px", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.assignedFieldOfficer || ""}>{p.assignedFieldOfficer ? `${p.assignedFieldOfficer.slice(0, 6)}…${p.assignedFieldOfficer.slice(-4)}` : "–"}</td>
-                <td style={{ fontSize: "12px", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.assignedValidator || ""}>{p.assignedValidator ? `${p.assignedValidator.slice(0, 6)}…${p.assignedValidator.slice(-4)}` : "–"}</td>
-                <td style={{ textAlign: "center" }}>
-                  <button className="secondary-btn" style={{ fontSize: "12px", padding: "5px 12px" }}
-                    onClick={() => { setSelectedProject(p); setActiveTab("metadata"); }}>Manage</button>
+                <td style={{ fontSize: "12px", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.assignedFieldOfficer || ""}>{walletName(p.assignedFieldOfficer)}</td>
+                <td style={{ fontSize: "12px", maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.assignedValidator || ""}>{walletName(p.assignedValidator)}</td>
+                <td style={{ textAlign: "center", display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap", minWidth: "220px" }}>
+                  <button className="primary-btn" style={{ fontSize: "11px", padding: "5px 8px", background: "#0d9488" }}
+                    onClick={() => { setSelectedProject(p); setActiveTab("assign-fo"); }}>Assign FO</button>
+                  <button className="primary-btn" style={{ fontSize: "11px", padding: "5px 8px", background: "#0284c7" }}
+                    onClick={() => { setSelectedProject(p); setActiveTab("assign-validator"); }}>Assign Val</button>
+                  <button className="secondary-btn" style={{ fontSize: "11px", padding: "5px 8px" }}
+                    onClick={() => navigate(`/admin/projects/${p.projectId || p._id}`)}>View Details</button>
                 </td>
               </tr>
             ))}
@@ -106,28 +119,21 @@ const ProjectManagement = () => {
             </div>
 
             <div style={{ display: "flex", gap: "24px", borderBottom: "1px solid #e5e7eb", marginBottom: "20px" }}>
-              {["metadata", "assignments"].map((tab) => (
-                <button key={tab} onClick={() => setActiveTab(tab)}
-                  style={{ padding: "12px 0", background: "none", border: "none", borderBottom: activeTab === tab ? "2px solid #0f2a44" : "none", fontWeight: activeTab === tab ? 600 : 400, color: activeTab === tab ? "#0f2a44" : "#6b7280", cursor: "pointer", fontSize: "14px", textTransform: "capitalize", marginBottom: "-1px" }}
-                >{tab}</button>
+              {[
+                { id: "assign-fo", label: "Assign Field Officer" },
+                { id: "assign-validator", label: "Assign Validator" }
+              ].map((tab) => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  style={{ padding: "12px 0", background: "none", border: "none", borderBottom: activeTab === tab.id ? "2px solid #0f2a44" : "none", fontWeight: activeTab === tab.id ? 600 : 400, color: activeTab === tab.id ? "#0f2a44" : "#6b7280", cursor: "pointer", fontSize: "14px", textTransform: "capitalize", marginBottom: "-1px" }}
+                >{tab.label}</button>
               ))}
             </div>
 
             <div style={{ maxHeight: "70vh", overflowY: "auto", paddingRight: "8px" }}>
-              {activeTab === "metadata" && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", fontSize: "14px", background: "#f8fafc", padding: "16px", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
-                  <div><strong>Type:</strong> {selectedProject.projectType}</div>
-                  <div><strong>Location:</strong> {selectedProject.location}</div>
-                  <div><strong>Area:</strong> {selectedProject.approximateAreaHa} ha</div>
-                  <div><strong>Status:</strong> <StatusBadge status={selectedProject.status?.toLowerCase()} /></div>
-                  <div style={{ gridColumn: "span 2" }}><strong>Credits:</strong> {selectedProject.totalCarbonCredits || 0} tCO₂e</div>
-                  {selectedProject.description && <div style={{ gridColumn: "span 2" }}><strong>Description:</strong> {selectedProject.description}</div>}
-                </div>
-              )}
 
-              {activeTab === "assignments" && (
+              {activeTab === "assign-fo" && (
                 <div>
-                  <div className="mt-20">
+                  <div className="mt-10">
                     <h3 style={{ fontSize: "15px", marginBottom: "12px", fontWeight: 600 }}>Assign Field Officer</h3>
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                       {officers.map((o) => (
@@ -140,8 +146,12 @@ const ProjectManagement = () => {
                       {officers.length === 0 && <span style={{ color: "#6b7280", fontSize: "13px" }}>No field officers registered</span>}
                     </div>
                   </div>
+                </div>
+              )}
 
-                  <div className="mt-20" style={{ marginBottom: "10px" }}>
+              {activeTab === "assign-validator" && (
+                <div>
+                  <div className="mt-10">
                     <h3 style={{ fontSize: "15px", marginBottom: "12px", fontWeight: 600 }}>Assign Validator</h3>
                     <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
                       {validators.map((v) => (

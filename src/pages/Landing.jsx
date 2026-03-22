@@ -13,7 +13,6 @@ const Landing = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [statsData, setStatsData] = useState({
         projects: 0,
-        trees: 0,
         co2: 0,
         credits: 0
     });
@@ -29,7 +28,6 @@ const Landing = () => {
                 const community = res.data.data.community || {};
                 setStatsData({
                     projects: community.activeProjects || 0,
-                    trees: Math.round((community.totalGlobalCredits || 0) * 0.8),
                     co2: community.totalGlobalCredits || 0,
                     credits: community.totalGlobalCredits || 0
                 });
@@ -47,7 +45,6 @@ const Landing = () => {
 
     const stats = [
         { label: "Projects Active", value: statsData.projects.toString(), icon: "🌿" },
-        { label: "Trees Planted", value: statsData.trees.toLocaleString(), icon: "🌳" },
         { label: "CO₂ Removed (tCO₂e)", value: statsData.co2.toLocaleString(), icon: "🌍" },
         { label: "Credits Minted", value: statsData.credits.toLocaleString(), icon: "💎" },
     ];

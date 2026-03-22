@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PhotoUploader from "../../components/shared/PhotoUploader";
 import MapComponent from "../../components/shared/MapComponent";
-import { submissionsAPI, projectsAPI } from "../../services/api";
+import { submissionsAPI, projectsAPI, uploadAPI } from "../../services/api";
 
 const TYPE_CONFIG = {
   MANGROVE: {
@@ -89,6 +89,7 @@ const NewSubmission = () => {
   const [errors, setErrors] = useState({});
   const [gpsLoading, setGpsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     projectsAPI.getAll()
@@ -190,45 +191,80 @@ const NewSubmission = () => {
     if (!validate()) return;
     setSubmitting(true);
 
-    let survivingTrees = 0;
-    let survivalRate = 0;
-    let dynamicSiteConditions = { ...form.siteCondition };
-
-    if (selectedProjectType === "MANGROVE") {
-      survivingTrees = parseInt(form.primaryMetricValue) || 0;
-      survivalRate = parseFloat(form.secondaryMetricValue) || 0;
-    } else if (selectedProjectType === "SEAGRASS") {
-      dynamicSiteConditions.shootDensity = parseFloat(form.primaryMetricValue) || 0;
-      dynamicSiteConditions.coverageArea = parseFloat(form.secondaryMetricValue) || 0;
-    } else if (selectedProjectType === "SALTMARSH") {
-      dynamicSiteConditions.grassCoverage = parseFloat(form.primaryMetricValue) || 0;
-      survivalRate = parseFloat(form.secondaryMetricValue) || 0;
-    } else {
-      dynamicSiteConditions.restoredArea = parseFloat(form.primaryMetricValue) || 0;
-      survivalRate = parseFloat(form.secondaryMetricValue) || 0;
-    }
-
-    const payload = {
-      projectId: form.projectId,
-      survivingTrees,
-      survivalRate,
-      gps: { lat: parseFloat(form.gpsLat), lng: parseFloat(form.gpsLng) },
-      siteCondition: dynamicSiteConditions,
-      restorationLog: { activities: form.restorationActivities, notes: form.fieldNotes },
-      carbonInputs: { notes: form.carbonSamplingNotes },
-    };
-
     try {
+      // Step 1: Upload photos to IPFS
+      let photoUrls = [];
+      if (photos.length > 0) {
+        console.log("Uploading", photos.length, "field photos to IPFS...");
+        const uploadRes = await uploadAPI.uploadPhotos(photos);
+        console.log("Field photo upload response:", uploadRes.data);
+        if (uploadRes.data.success && uploadRes.data.data.files) {
+          photoUrls = uploadRes.data.data.files.map(f => f.url);
+        }
+      }
+
+      // Step 2: Build submission payload
+      let survivingTrees = 0;
+      let survivalRate = 0;
+      let dynamicSiteConditions = { ...form.siteCondition };
+
+      if (selectedProjectType === "MANGROVE") {
+        survivingTrees = parseInt(form.primaryMetricValue) || 0;
+        survivalRate = parseFloat(form.secondaryMetricValue) || 0;
+      } else if (selectedProjectType === "SEAGRASS") {
+        dynamicSiteConditions.shootDensity = parseFloat(form.primaryMetricValue) || 0;
+        dynamicSiteConditions.coverageArea = parseFloat(form.secondaryMetricValue) || 0;
+      } else if (selectedProjectType === "SALTMARSH") {
+        dynamicSiteConditions.grassCoverage = parseFloat(form.primaryMetricValue) || 0;
+        survivalRate = parseFloat(form.secondaryMetricValue) || 0;
+      } else {
+        dynamicSiteConditions.restoredArea = parseFloat(form.primaryMetricValue) || 0;
+        survivalRate = parseFloat(form.secondaryMetricValue) || 0;
+      }
+
+      const payload = {
+        projectId: form.projectId,
+        survivingTrees,
+        survivalRate,
+        gps: { lat: parseFloat(form.gpsLat), lng: parseFloat(form.gpsLng) },
+        siteCondition: dynamicSiteConditions,
+        restorationLog: { activities: form.restorationActivities, notes: form.fieldNotes },
+        carbonInputs: { notes: form.carbonSamplingNotes },
+        currentPhotos: photoUrls,
+      };
+
+      console.log("Submitting field data:", payload);
       await submissionsAPI.create(payload);
-      alert("Submission created successfully!");
-      navigate("/field/history");
+      setSubmitted(true);
     } catch (err) {
-      const msg = err.response?.data?.error?.message || "Submission failed. Please try again.";
+      console.error("Submission failed:", err);
+      const msg = err.response?.data?.error?.message || err.message || "Submission failed. Please try again.";
       alert(msg);
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <div style={{ textAlign: "center", padding: "60px 20px", background: "white", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", margin: "40px auto", maxWidth: "600px" }}>
+        <h2 style={{ fontSize: "22px", marginTop: "16px", color: "#0f766e" }}>
+          Submission Successful
+        </h2>
+        <p style={{ color: "#6b7280", marginTop: "8px", fontSize: "15px" }}>
+          Your field data has been successfully submitted and is currently pending verification.
+        </p>
+        <div className="action-btns mt-20" style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "30px" }}>
+          <button className="primary-btn" onClick={() => navigate("/field/history")} style={{ padding: "10px 24px" }}>
+            View History
+          </button>
+          <button className="secondary-btn" onClick={() => navigate("/field")} style={{ padding: "10px 24px" }}>
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

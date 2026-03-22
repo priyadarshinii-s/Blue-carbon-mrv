@@ -28,6 +28,7 @@ const App = () => {
         <>
             <CalculationProvider>
                 <AuthModal />
+                {/* Router configurations */}
                 <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />

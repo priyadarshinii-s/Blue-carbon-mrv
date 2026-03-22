@@ -17,6 +17,7 @@ import verificationRoutes from './routes/verification.routes';
 import adminRoutes from './routes/admin.routes';
 import reportRoutes from './routes/report.routes';
 import settingsRoutes from './routes/settings.routes';
+import uploadRoutes from './routes/upload.routes';
 
 dotenv.config();
 
@@ -63,8 +64,8 @@ const submissionLimiter = rateLimit({
     message: { success: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Submission rate limit exceeded. Max 10 per minute.' } },
 });
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use(mongoSanitize());
 
@@ -86,6 +87,7 @@ app.use('/api/verifications', verificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.all('*', (req, _res, next) => {
     next(new NotFoundError(`Route ${req.method} ${req.originalUrl} not found.`));

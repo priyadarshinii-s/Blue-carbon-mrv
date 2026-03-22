@@ -9,6 +9,7 @@ import MintApproval from "../pages/admin/MintApproval";
 import Reports from "../pages/admin/Reports";
 import AuditLog from "../pages/admin/AuditLog";
 import FormulaSettings from "../pages/admin/FormulaSettings";
+import ProjectDetails from "../pages/admin/ProjectDetails";
 
 const AdminRoutes = () => (
   <Route
@@ -24,6 +25,7 @@ const AdminRoutes = () => (
     <Route path="users" element={<UserManagement />} />
     <Route path="projects" element={<ProjectManagement />} />
     <Route path="projects/create" element={<CreateProject />} />
+    <Route path="projects/:id" element={<ProjectDetails />} />
     <Route path="approvals" element={<MintApproval />} />
     <Route path="reports" element={<Reports />} />
     <Route path="audit" element={<AuditLog />} />

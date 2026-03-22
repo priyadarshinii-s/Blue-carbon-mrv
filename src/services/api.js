@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE = "https://blue-carbon-mrv-zs76.onrender.com/api";
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 const api = axios.create({
     baseURL: API_BASE,
     headers: { "Content-Type": "application/json" },
@@ -86,6 +86,20 @@ export const reportsAPI = {
 export const settingsAPI = {
     getFormula: () => api.get("/settings/formula"),
     updateFormula: (data) => api.patch("/settings/formula", data),
+};
+
+export const uploadAPI = {
+    uploadPhotos: (fileObjects) => {
+        const formData = new FormData();
+        fileObjects.forEach((f) => {
+            const file = f.file || f;
+            formData.append("files", file, file.name || "photo.jpg");
+        });
+        return api.post("/upload/photos", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+            timeout: 120000, // 2 min timeout for large uploads
+        });
+    },
 };
 
 export default api;

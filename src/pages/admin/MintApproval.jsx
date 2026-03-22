@@ -37,6 +37,9 @@ const MintApproval = () => {
           verifiedDate: item.project?.updatedAt
             ? new Date(item.project.updatedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
             : "–",
+          projectCreatedAt: item.project?.createdAt
+            ? new Date(item.project.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+            : "–",
           status: "awaiting_mint",
         }));
         setMintQueue(mapped);
@@ -84,8 +87,8 @@ const MintApproval = () => {
   };
 
   const timelineSteps = [
-    { title: "Field Data Submitted", description: "GPS-tagged photos and tree count submitted", date: "14 Feb 2026", completed: true },
-    { title: "Validator Reviewed", description: "Photo evidence and GPS verified by validator", date: "18 Feb 2026", completed: true },
+    { title: "Project Registered", description: "Project registered on the platform", date: selectedItem ? selectedItem.projectCreatedAt : "–", completed: true },
+    { title: "Validator Reviewed", description: "Photo evidence and GPS verified by validator", date: selectedItem ? selectedItem.verifiedDate : "–", completed: true },
     { title: "Awaiting Mint Approval", description: "Admin to approve and mint carbon credits", active: true },
     { title: "Credits Minted", description: "ERC-20 tokens minted on Polygon" },
   ];

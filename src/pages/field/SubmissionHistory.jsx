@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import StatusBadge from "../../components/shared/StatusBadge";
-import { submissionsAPI } from "../../services/api";
+import { submissionsAPI, projectsAPI } from "../../services/api";
 
 
 
@@ -14,9 +14,24 @@ const SubmissionHistory = () => {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [statusFilter, setStatusFilter] = useState("ALL");
 
+  const [projectsMap, setProjectsMap] = useState({});
+
   useEffect(() => {
-    submissionsAPI.getMy()
-      .then((res) => setSubmissions(res.data.data.submissions || []))
+    Promise.all([
+      submissionsAPI.getMy(),
+      projectsAPI.getAll().catch(() => ({ data: { data: { projects: [] } } }))
+    ])
+      .then(([subRes, projRes]) => {
+        setSubmissions(subRes.data.data.submissions || []);
+        
+        const projs = projRes.data?.data?.projects || [];
+        const pMap = {};
+        projs.forEach(p => {
+          pMap[p.projectId] = p.projectName;
+          if (p._id) pMap[p._id] = p.projectName;
+        });
+        setProjectsMap(pMap);
+      })
       .catch(() => setSubmissions([]))
       .finally(() => setLoading(false));
   }, []);
@@ -61,7 +76,7 @@ const SubmissionHistory = () => {
               onClick={() => setSelectedSubmission(s)}
             >
               <div className="list-row-main">
-                <span className="list-row-title">{s.projectId}</span>
+                <span className="list-row-title">{projectsMap[s.projectId] || s.projectId}</span>
                 <span className="list-row-meta">{formatDate(s.visitDate)} · {s.survivingTrees} trees · {s.survivalRate}% survival · GPS {s.gps?.lat}, {s.gps?.lng}</span>
               </div>
               <div className="list-row-end">
@@ -83,7 +98,7 @@ const SubmissionHistory = () => {
               <button onClick={() => setSelectedSubmission(null)} style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }}>×</button>
             </div>
             <div style={{ fontSize: "14px", lineHeight: "2" }}>
-              <div><strong>Project:</strong> {selectedSubmission.projectId}</div>
+              <div><strong>Project:</strong> {projectsMap[selectedSubmission.projectId] || selectedSubmission.projectId}</div>
               <div><strong>Date:</strong> {formatDate(selectedSubmission.visitDate)}</div>
               <div><strong>Tree Count:</strong> {selectedSubmission.survivingTrees}</div>
               <div><strong>Survival Rate:</strong> {selectedSubmission.survivalRate}%</div>

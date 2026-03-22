@@ -5,7 +5,7 @@ import EcosystemTypeCards from "../../components/shared/EcosystemTypeCards";
 import LocationMapWithDraw from "../../components/shared/LocationMapWithDraw";
 import PhotoUploader from "../../components/shared/PhotoUploader";
 import DraftRecoveryBanner from "../../components/shared/DraftRecoveryBanner";
-import { adminAPI, projectsAPI } from "../../services/api";
+import { adminAPI, projectsAPI, uploadAPI } from "../../services/api";
 import ConfirmationTxModal from "../../components/shared/ConfirmationTxModal";
 import ProjectSuccessScreen from "../../components/shared/ProjectSuccessScreen";
 
@@ -62,7 +62,8 @@ const CreateProject = () => {
     clearTimeout(draftTimer.current);
     draftTimer.current = setTimeout(() => {
       if (form.name || form.ecosystemType) {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, step }));
+        const { photos, videos, ...formWithoutFiles } = form;
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ form: formWithoutFiles, step }));
       }
     }, 30000);
     return () => clearTimeout(draftTimer.current);
@@ -71,7 +72,10 @@ const CreateProject = () => {
   const handleRestoreDraft = () => {
     try {
       const saved = JSON.parse(localStorage.getItem(DRAFT_KEY));
-      if (saved) { setForm(saved.form); setStep(saved.step); }
+      if (saved) { 
+        setForm({ ...saved.form, photos: [], videos: [] }); 
+        setStep(saved.step); 
+      }
     } catch { /* ignore */ }
     setShowDraftBanner(false);
   };
@@ -162,12 +166,37 @@ const CreateProject = () => {
   };
 
   const handleSaveDraft = () => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, step }));
+    // Exclude photos and videos because File objects cannot be JSON serialized
+    const { photos, videos, ...formWithoutFiles } = form;
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ form: formWithoutFiles, step }));
     alert("Draft saved successfully!");
   };
 
+  const validateAllSteps = () => {
+    const errs = {};
+    if (!form.name || form.name.length < 5) errs.name = "Name must be at least 5 characters";
+    if (!form.ecosystemType) errs.ecosystemType = "Select an ecosystem type";
+    if (!form.description || form.description.length < 50) errs.description = "Description must be at least 50 characters";
+    if (!form.location) errs.location = "Location name is required";
+    if (!form.area || parseFloat(form.area) < 0.1) errs.area = "Area must be at least 0.1 ha";
+    if (form.photos.length < 3) errs.photos = "At least 3 baseline photos are required";
+    if (!form.startDate) errs.startDate = "Start date is required";
+    if (form.endDate && form.endDate < form.startDate) errs.endDate = "End date must be after start date";
+    
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      if (errs.name || errs.ecosystemType || errs.description) setStep(0);
+      else if (errs.location || errs.area) setStep(1);
+      else if (errs.photos) setStep(2);
+      else setStep(3);
+      alert("Please complete all required fields before submitting.");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmitClick = () => {
-    if (!validateStep()) return;
+    if (!validateAllSteps()) return;
     setShowConfirmModal(true);
   };
 
@@ -175,6 +204,28 @@ const CreateProject = () => {
     setSubmitting(true);
     setShowConfirmModal(false);
     try {
+      // Combine photos and videos into a single IPFS Folder upload
+      const allEvidence = [...form.photos, ...form.videos];
+      let photoUrls = [];
+
+      if (allEvidence.length > 0) {
+        console.log("Uploading", allEvidence.length, "baseline files to IPFS folder...");
+        const uploadRes = await uploadAPI.uploadPhotos(allEvidence);
+        console.log("Photo upload response:", uploadRes.data);
+        if (!uploadRes.data.success) {
+          throw new Error("Failed to upload evidence to IPFS. Please try again.");
+        }
+        const d = uploadRes.data.data;
+        // Store the individual file URLs so images render directly
+        if (d.files && d.files.length > 0) {
+          photoUrls = d.files.map(f => f.url);
+        } else if (d.folderUrl) {
+          photoUrls = [d.folderUrl];
+        }
+        console.log("IPFS photo URLs to save:", photoUrls);
+      }
+
+      // Step 3: Create the project with the single folder URL
       const payload = {
         projectName: form.name,
         projectType: form.ecosystemType,
@@ -188,8 +239,11 @@ const CreateProject = () => {
         status: form.initialStatus,
         assignedFieldOfficer: form.assignedOfficers[0] || undefined,
         assignedValidator: form.assignedValidators[0] || undefined,
+        baselinePhotos: photoUrls,
+        baselineVideos: [],
       };
 
+      console.log("Creating project with payload:", payload);
       const res = await projectsAPI.create(payload);
       const project = res.data.data.project;
 

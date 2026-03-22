@@ -30,20 +30,27 @@ const AssignedProjects = () => {
 
       <div className="list-container">
         {projects.map((p) => (
-          <div key={p._id || p.projectId} className="list-row" style={{ cursor: "pointer" }} onClick={() => navigate(`/field/submit?project=${p.projectId || p._id}`)}>
+          <div 
+            key={p._id || p.projectId} 
+            className="list-row" 
+            style={{ cursor: p.status?.toUpperCase() === "PENDING" ? "pointer" : "default" }} 
+            onClick={p.status?.toUpperCase() === "PENDING" ? () => navigate(`/field/submit?project=${p.projectId || p._id}`) : undefined}
+          >
             <div className="list-row-main">
               <span className="list-row-title">{p.projectName}</span>
               <span className="list-row-meta">{p.location} · {p.projectType} · {p.approximateAreaHa} ha</span>
             </div>
             <div className="list-row-end">
               <StatusBadge status={p.status?.toLowerCase()} />
-              <button
-                className="primary-btn"
-                style={{ fontSize: "12px", padding: "5px 14px" }}
-                onClick={(e) => { e.stopPropagation(); navigate(`/field/submit?project=${p.projectId || p._id}`); }}
-              >
-                Submit Data
-              </button>
+              {p.status?.toUpperCase() === "PENDING" && (
+                <button
+                  className="primary-btn"
+                  style={{ fontSize: "12px", padding: "5px 14px" }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/field/submit?project=${p.projectId || p._id}`); }}
+                >
+                  Submit Data
+                </button>
+              )}
             </div>
           </div>
         ))}
