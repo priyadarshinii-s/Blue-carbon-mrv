@@ -85,20 +85,27 @@ const FieldDashboard = () => {
             <div style={{ padding: "20px", textAlign: "center", color: "#6b7280" }}>No projects assigned yet.</div>
           ) : (
             projects.map((p) => (
-              <div key={p.projectId} className="list-row" style={{ cursor: "pointer" }} onClick={() => navigate(`/field/submit?project=${p.projectId}`)}>
+              <div 
+                key={p.projectId} 
+                className="list-row" 
+                style={{ cursor: p.status?.toUpperCase() === "PENDING" ? "pointer" : "default" }} 
+                onClick={p.status?.toUpperCase() === "PENDING" ? () => navigate(`/field/submit?project=${p.projectId}`) : undefined}
+              >
                 <div className="list-row-main">
                   <span className="list-row-title">{p.projectName}</span>
                   <span className="list-row-meta">{p.location} · {p.projectType} · {p.approximateAreaHa} ha · {p.status}</span>
                 </div>
                 <div className="list-row-end">
                   <span style={{ fontSize: "11px", background: "#dcfce7", color: "#047857", borderRadius: "999px", padding: "2px 10px", fontWeight: 600 }}>{p.status}</span>
-                  <button
-                    className="primary-btn"
-                    style={{ fontSize: "12px", padding: "5px 14px" }}
-                    onClick={(e) => { e.stopPropagation(); navigate(`/field/submit?project=${p.projectId}`); }}
-                  >
-                    Submit Data
-                  </button>
+                  {p.status?.toUpperCase() === "PENDING" && (
+                    <button
+                      className="primary-btn"
+                      style={{ fontSize: "12px", padding: "5px 14px" }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/field/submit?project=${p.projectId}`); }}
+                    >
+                      Submit Data
+                    </button>
+                  )}
                 </div>
               </div>
             ))

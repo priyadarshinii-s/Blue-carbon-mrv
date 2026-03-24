@@ -65,11 +65,13 @@ const projectSchema = new Schema<IProject>(
             ref: 'User',
             lowercase: true,
         },
+        fieldOfficerAssignedAt: { type: Date },
         assignedValidator: {
             type: String,
             ref: 'User',
             lowercase: true,
         },
+        validatorAssignedAt: { type: Date },
         blockchainProjectHash: { type: String },
         totalCarbonCredits: {
             type: Number,

@@ -75,7 +75,9 @@ export interface IProject extends Document {
     endDate?: Date;
     status: ProjectStatus;
     assignedFieldOfficer?: string;
+    fieldOfficerAssignedAt?: Date;
     assignedValidator?: string;
+    validatorAssignedAt?: Date;
     blockchainProjectHash?: string;
     totalCarbonCredits: number;
     createdAt: Date;

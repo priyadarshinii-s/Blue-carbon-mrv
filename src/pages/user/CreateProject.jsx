@@ -201,12 +201,30 @@ const UserCreateProject = () => {
                 console.log("IPFS photo URLs to save:", photoUrls);
             }
 
+            let geofence;
+            if (form.lat && form.lng) {
+                const lng = parseFloat(form.lng);
+                const lat = parseFloat(form.lat);
+                const offset = 0.0001;
+                geofence = {
+                    type: "Polygon",
+                    coordinates: [[
+                        [lng - offset, lat - offset],
+                        [lng + offset, lat - offset],
+                        [lng + offset, lat + offset],
+                        [lng - offset, lat + offset],
+                        [lng - offset, lat - offset]
+                    ]]
+                };
+            }
+
             // Step 3: Create the project with the single folder URL
             const payload = {
                 projectName: form.name,
                 projectType,
                 description: form.description,
                 location: form.location,
+                geofence,
                 approximateAreaHa: parseFloat(form.area) || 0,
                 plannedActivities: form.activities,
                 startDate: form.startDate ? new Date(form.startDate).toISOString() : undefined,

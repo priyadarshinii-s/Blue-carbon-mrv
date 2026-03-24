@@ -119,8 +119,10 @@ export const assignUserToProject = catchAsync(async (req: Request, res: Response
 
     if (role === 'FIELD_OFFICER') {
         project.assignedFieldOfficer = user.walletAddress;
+        project.fieldOfficerAssignedAt = new Date();
     } else if (role === 'VALIDATOR') {
         project.assignedValidator = user.walletAddress;
+        project.validatorAssignedAt = new Date();
     }
 
     await project.save();

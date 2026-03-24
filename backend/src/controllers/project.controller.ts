@@ -91,9 +91,18 @@ export const getProject = catchAsync(async (req: Request, res: Response): Promis
 });
 
 export const updateProject = catchAsync(async (req: Request, res: Response): Promise<void> => {
+    const updateData = { ...req.body };
+
+    if (updateData.assignedFieldOfficer !== undefined) {
+        updateData.fieldOfficerAssignedAt = updateData.assignedFieldOfficer ? new Date() : null;
+    }
+    if (updateData.assignedValidator !== undefined) {
+        updateData.validatorAssignedAt = updateData.assignedValidator ? new Date() : null;
+    }
+
     const project = await Project.findOneAndUpdate(
         { projectId: req.params.id },
-        { $set: req.body },
+        { $set: updateData },
         { new: true, runValidators: true }
     );
 
