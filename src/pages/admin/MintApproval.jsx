@@ -16,10 +16,11 @@ const MintApproval = () => {
   const [mintQueue, setMintQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [txModal, setTxModal] = useState({ open: false, status: "pending", txHash: "" });
+  const [txModal, setTxModal] = useState({ open: false, status: "pending", txHash: "", blockNumber: null });
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [mintError, setMintError] = useState("");
 
   useEffect(() => {
     adminAPI.getMintQueue()
@@ -32,6 +33,7 @@ const MintApproval = () => {
           fieldOfficer: item.project?.assignedFieldOfficer || "–",
           validator: item.project?.assignedValidator || "–",
           trees: item.project?.totalCarbonCredits || 0,
+          totalMinted: item.totalMinted || 0,
           survivalRate: 0,
           co2: item.unmintedCredits || 0,
           verifiedDate: item.project?.updatedAt
@@ -40,6 +42,7 @@ const MintApproval = () => {
           projectCreatedAt: item.project?.createdAt
             ? new Date(item.project.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
             : "–",
+          onChainEnabled: item.onChainEnabled || false,
           status: "awaiting_mint",
         }));
         setMintQueue(mapped);
@@ -49,17 +52,30 @@ const MintApproval = () => {
   }, []);
 
   const handleMint = async () => {
-    setTxModal({ open: true, status: "pending", txHash: "" });
+    setTxModal({ open: true, status: "pending", txHash: "", blockNumber: null });
+    setMintError("");
     try {
       const res = await adminAPI.mint(selectedItem.projectId, {
         year: new Date().getFullYear().toString(),
         amount: selectedItem.co2,
       });
-      const txHash = res.data?.data?.mintTxHash || "0x" + Math.random().toString(16).slice(2, 42) + Math.random().toString(16).slice(2, 28);
-      setTxModal({ open: true, status: "success", txHash });
+
+      const data = res.data?.data;
+      const txHash = data?.txHash || "";
+      const blockNumber = data?.blockNumber || null;
+      const onChainStatus = data?.onChainStatus || "confirmed";
+
+      setTxModal({
+        open: true,
+        status: onChainStatus === "confirmed" || onChainStatus === "pending" ? "success" : "error",
+        txHash,
+        blockNumber,
+      });
       setMintQueue(prev => prev.filter(q => q.id !== selectedItem.id));
-    } catch {
-      setTxModal({ open: true, status: "error", txHash: "" });
+    } catch (err) {
+      const errorMsg = err?.response?.data?.error?.message || "Transaction failed. Please try again.";
+      setMintError(errorMsg);
+      setTxModal({ open: true, status: "error", txHash: "", blockNumber: null });
     }
   };
 
@@ -84,13 +100,14 @@ const MintApproval = () => {
     setSelectedItem(null);
     setRejectReason("");
     setRejectError("");
+    setMintError("");
   };
 
   const timelineSteps = [
     { title: "Project Registered", description: "Project registered on the platform", date: selectedItem ? selectedItem.projectCreatedAt : "–", completed: true },
     { title: "Validator Reviewed", description: "Photo evidence and GPS verified by validator", date: selectedItem ? selectedItem.verifiedDate : "–", completed: true },
-    { title: "Awaiting Mint Approval", description: "Admin to approve and mint carbon credits", active: true },
-    { title: "Credits Minted", description: "ERC-20 tokens minted on Polygon" },
+    { title: "Awaiting Mint Approval", description: "Admin to approve and mint carbon credits on-chain", active: true },
+    { title: "Credits Minted", description: "ERC-20 tokens minted on Ethereum (Sepolia)" },
   ];
 
   if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Loading mint queue…</div>;
@@ -109,7 +126,7 @@ const MintApproval = () => {
           <table className="table" style={{ marginTop: "12px" }}>
             <thead>
               <tr>
-                <th>Project</th><th>Field Officer</th><th>Validator</th><th>Trees Verified</th><th>CO₂ (tCO₂e)</th><th>Verified Date</th><th>Action</th>
+                <th>Project</th><th>Field Officer</th><th>Validator</th><th>Total Credits</th><th>Already Minted</th><th>Mintable (tCO₂e)</th><th>Verified Date</th><th>Chain</th><th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -119,9 +136,38 @@ const MintApproval = () => {
                   <td>{item.fieldOfficer}</td>
                   <td>{item.validator}</td>
                   <td>{item.trees}</td>
-                  <td>{item.co2}</td>
+                  <td>{item.totalMinted}</td>
+                  <td>
+                    <span style={{
+                      background: "#ecfdf5", color: "#065f46", fontWeight: 600,
+                      padding: "2px 8px", borderRadius: "10px", fontSize: "13px"
+                    }}>
+                      {item.co2}
+                    </span>
+                  </td>
                   <td>{item.verifiedDate}</td>
-                  <td><button className="primary-btn" style={{ fontSize: "12px", padding: "6px 12px" }} onClick={() => setSelectedItem(item)}>Review</button></td>
+                  <td>
+                    {item.onChainEnabled ? (
+                      <span style={{
+                        background: "#dbeafe", color: "#1e40af", fontSize: "11px",
+                        padding: "2px 6px", borderRadius: "4px", fontWeight: 500,
+                      }}>On-Chain</span>
+                    ) : (
+                      <span style={{
+                        background: "#f3f4f6", color: "#6b7280", fontSize: "11px",
+                        padding: "2px 6px", borderRadius: "4px",
+                      }}>Off-Chain</span>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      className="primary-btn"
+                      style={{ fontSize: "12px", padding: "6px 12px" }}
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      Review
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -137,9 +183,14 @@ const MintApproval = () => {
                   <div style={{ fontSize: "14px", lineHeight: "2" }}>
                     <div><strong>Field Officer:</strong> {selectedItem.fieldOfficer}</div>
                     <div><strong>Validator:</strong> {selectedItem.validator}</div>
-                    <div><strong>Trees Verified:</strong> {selectedItem.trees}</div>
-                    <div><strong>Survival Rate:</strong> {selectedItem.survivalRate}%</div>
-                    <div><strong>CO₂ Estimated:</strong> {selectedItem.co2} tCO₂e</div>
+                    <div><strong>Total Credits:</strong> {selectedItem.trees} tCO₂e</div>
+                    <div><strong>Already Minted:</strong> {selectedItem.totalMinted} tCO₂e</div>
+                    <div>
+                      <strong>Mintable Credits:</strong>{" "}
+                      <span style={{ color: "#065f46", fontWeight: 700, fontSize: "16px" }}>
+                        {selectedItem.co2} tCO₂e
+                      </span>
+                    </div>
                     <div><strong>Verified Date:</strong> {selectedItem.verifiedDate}</div>
                   </div>
                 </div>
@@ -162,6 +213,31 @@ const MintApproval = () => {
             <div>
               <div className="decision-section">
                 <h3>Admin Decision</h3>
+
+                {/* On-chain information box */}
+                <div style={{
+                  background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px",
+                  padding: "12px 16px", marginBottom: "16px", fontSize: "13px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <span style={{ fontSize: "16px" }}>⛓️</span>
+                    <strong style={{ color: "#1e40af" }}>On-Chain Minting</strong>
+                  </div>
+                  <p style={{ color: "#374151", margin: 0 }}>
+                    Clicking "Approve & Mint" will mint <strong>{selectedItem.co2} BCC tokens</strong> (ERC-20)
+                    on the blockchain. Metadata will be stored on IPFS. This action is irreversible.
+                  </p>
+                </div>
+
+                {mintError && (
+                  <div style={{
+                    background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px",
+                    padding: "12px 16px", marginBottom: "16px", fontSize: "13px", color: "#991b1b",
+                  }}>
+                    <strong>Mint Error:</strong> {mintError}
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label>Rejection Reason (required if rejecting)</label>
                   <textarea placeholder="Provide reason for rejection" value={rejectReason}
@@ -169,7 +245,9 @@ const MintApproval = () => {
                   {rejectError && <div className="inline-error">{rejectError}</div>}
                 </div>
                 <div className="action-btns">
-                  <button className="primary-btn" onClick={handleMint}>Approve &amp; Mint</button>
+                  <button className="primary-btn" onClick={handleMint}>
+                    ⛓️ Approve & Mint On-Chain
+                  </button>
                   <button className="secondary-btn" style={{ color: "#b91c1c" }} onClick={handleReject}>Reject</button>
                 </div>
               </div>
@@ -181,9 +259,13 @@ const MintApproval = () => {
         </>
       )}
 
-      <TransactionModal isOpen={txModal.open}
-        onClose={() => { setTxModal({ open: false, status: "pending", txHash: "" }); setSelectedItem(null); }}
-        status={txModal.status} txHash={txModal.txHash} />
+      <TransactionModal
+        isOpen={txModal.open}
+        onClose={() => { setTxModal({ open: false, status: "pending", txHash: "", blockNumber: null }); setSelectedItem(null); }}
+        status={txModal.status}
+        txHash={txModal.txHash}
+        blockNumber={txModal.blockNumber}
+      />
     </>
   );
 };

@@ -80,6 +80,8 @@ export interface IProject extends Document {
     validatorAssignedAt?: Date;
     blockchainProjectHash?: string;
     totalCarbonCredits: number;
+    totalMinted: number;
+    onChainMinted: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -129,6 +131,8 @@ export interface IVerification extends Document {
     createdAt: Date;
 }
 
+export type OnChainStatus = 'pending' | 'confirmed' | 'failed';
+
 export interface ITokenData extends Document {
     projectId: string;
     year: string;
@@ -137,6 +141,8 @@ export interface ITokenData extends Document {
     retiredAmount: number;
     metadataIPFS?: string;
     mintTxHash?: string;
+    onChainStatus: OnChainStatus;
+    blockNumber?: number;
     createdAt: Date;
     updatedAt: Date;
 }

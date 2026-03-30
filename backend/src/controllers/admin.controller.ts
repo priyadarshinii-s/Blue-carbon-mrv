@@ -8,6 +8,11 @@ import { BadRequestError, ConflictError, NotFoundError } from '../utils/AppError
 import { UserRole, UserStatus } from '../types';
 import { generateTokenId } from '../utils/generateId';
 import { uploadJSONToIPFS } from '../services/ipfs.service';
+import {
+    mintCreditsOnChain,
+    setMintLimitOnChain,
+    isBlockchainConfigured,
+} from '../services/blockchain.service';
 import { logger } from '../utils/logger';
 import { logAudit } from '../services/audit.service';
 import { AuditAction } from '../models/AuditLog';
@@ -151,7 +156,7 @@ export const getMintQueue = catchAsync(async (_req: Request, res: Response): Pro
     const mintQueue = await Promise.all(
         projects.map(async (project) => {
             const mintedTokens = await TokenData.find({ projectId: project.projectId });
-            const totalMinted = mintedTokens.reduce((sum, t) => sum + t.mintedAmount, 0);
+            const totalMinted = project.totalMinted || mintedTokens.reduce((sum, t) => sum + t.mintedAmount, 0);
             const unmintedCredits = project.totalCarbonCredits - totalMinted;
 
             return {
@@ -159,6 +164,7 @@ export const getMintQueue = catchAsync(async (_req: Request, res: Response): Pro
                 totalMinted,
                 unmintedCredits,
                 mintedTokens,
+                onChainEnabled: project.onChainMinted || false,
             };
         })
     );
@@ -171,17 +177,34 @@ export const getMintQueue = catchAsync(async (_req: Request, res: Response): Pro
     });
 });
 
+/**
+ * Mint carbon credits — on-chain via smart contract + MongoDB
+ *
+ * Flow:
+ * 1. Fetch project from MongoDB
+ * 2. Validate: totalCarbonCredits > totalMinted (else 400)
+ * 3. Upload metadata to IPFS → get CID
+ * 4. Call blockchain.service.mintCreditsOnChain(projectId, amount, CID)
+ * 5. On success:
+ *    a. Save TokenData { txHash, metadataCID, projectId }
+ *    b. Increment project.totalMinted
+ *    c. Set project.status = 'ACTIVE'
+ * 6. On blockchain failure:
+ *    a. Do NOT update MongoDB
+ *    b. Return 500 with error details
+ */
 export const mintCredits = catchAsync(async (req: Request, res: Response): Promise<void> => {
-    const { projectId } = req.params;
+    const projectId = req.params.projectId as string;
     const { year, amount } = req.body;
 
+    // ── Step 1: Fetch project ──
     const project = await Project.findOne({ projectId });
     if (!project) {
         throw new NotFoundError('Project not found.');
     }
 
-    const existingTokens = await TokenData.find({ projectId });
-    const totalMinted = existingTokens.reduce((sum, t) => sum + t.mintedAmount, 0);
+    // ── Step 2: Validate available credits ──
+    const totalMinted = project.totalMinted || 0;
     const available = project.totalCarbonCredits - totalMinted;
 
     if (amount > available) {
@@ -190,6 +213,7 @@ export const mintCredits = catchAsync(async (req: Request, res: Response): Promi
         );
     }
 
+    // ── Step 3: Upload metadata to IPFS ──
     const metadata = {
         projectId,
         projectName: project.projectName,
@@ -202,31 +226,109 @@ export const mintCredits = catchAsync(async (req: Request, res: Response): Promi
 
     const metadataIPFS = await uploadJSONToIPFS(metadata, `${projectId}-${year}-metadata`);
 
+    // ── Step 4: Mint on-chain ──
+    const blockchainEnabled = await isBlockchainConfigured();
+    let txHash: string | undefined;
+    let blockNumber: number | undefined;
+    let onChainStatus: 'pending' | 'confirmed' | 'failed' = 'pending';
+
+    if (blockchainEnabled) {
+        try {
+            // Set mint limit on-chain before minting (ensures contract enforces the cap)
+            await setMintLimitOnChain(projectId, project.totalCarbonCredits);
+
+            const result = await mintCreditsOnChain(projectId, amount, metadataIPFS);
+            txHash = result.txHash;
+            blockNumber = result.blockNumber;
+            onChainStatus = 'confirmed';
+
+            logger.info(
+                { projectId, year, amount, txHash, blockNumber },
+                'Credits minted on-chain successfully'
+            );
+        } catch (blockchainErr: unknown) {
+            // ── Step 6: On blockchain failure — do NOT update MongoDB ──
+            const errorMessage = blockchainErr instanceof Error
+                ? blockchainErr.message
+                : 'Unknown blockchain error';
+
+            logger.error(
+                { err: blockchainErr, projectId, year, amount },
+                'On-chain minting failed — MongoDB NOT updated'
+            );
+
+            res.status(500).json({
+                success: false,
+                error: {
+                    code: 'BLOCKCHAIN_MINT_FAILED',
+                    message: `On-chain minting failed: ${errorMessage}`,
+                    details: {
+                        projectId,
+                        amount,
+                        metadataIPFS,
+                    },
+                },
+            });
+            return;
+        }
+    } else {
+        // Blockchain not configured — mint off-chain only (backward compatibility)
+        logger.warn(
+            { projectId, year, amount },
+            'Blockchain not configured — minting off-chain only'
+        );
+        onChainStatus = 'pending';
+    }
+
+    // ── Step 5: On success — update MongoDB ──
+
+    // 5a. Create TokenData record
     const tokenData = await TokenData.create({
         projectId,
         year,
         mintedAmount: amount,
         metadataIPFS,
-
+        mintTxHash: txHash,
+        onChainStatus,
+        blockNumber,
     });
 
-    logger.info({ projectId, year, amount, metadataIPFS }, 'Credits minted (placeholder)');
+    // 5b. Increment project.totalMinted
+    // 5c. Set project.status = 'ACTIVE' (if currently VALIDATED)
+    const updateFields: Record<string, unknown> = {
+        $inc: { totalMinted: amount },
+    };
 
-    // Transition project from VALIDATED to ACTIVE after minting
     if (project.status === 'VALIDATED') {
-        await Project.findOneAndUpdate(
-            { projectId },
-            { $set: { status: 'ACTIVE' } }
-        );
+        updateFields.$set = { status: 'ACTIVE' };
     }
+
+    if (blockchainEnabled && onChainStatus === 'confirmed') {
+        if (!updateFields.$set) updateFields.$set = {};
+        (updateFields.$set as Record<string, unknown>).onChainMinted = true;
+    }
+
+    await Project.findOneAndUpdate({ projectId }, updateFields);
+
+    logger.info(
+        { projectId, year, amount, metadataIPFS, txHash, onChainStatus },
+        'Credits minted successfully'
+    );
 
     logAudit(AuditAction.CREDIT_MINTED, req.user!.walletAddress, `Minted ${amount} credits for project ${project.projectName} (${year})`, {
         targetId: projectId as string,
-        meta: { year, amount, metadataIPFS, projectName: project.projectName },
+        txHash,
+        meta: { year, amount, metadataIPFS, projectName: project.projectName, txHash, onChainStatus, blockNumber },
     });
 
     res.status(201).json({
         success: true,
-        data: { tokenData },
+        data: {
+            tokenData,
+            txHash,
+            blockNumber,
+            onChainStatus,
+            metadataIPFS,
+        },
     });
 });

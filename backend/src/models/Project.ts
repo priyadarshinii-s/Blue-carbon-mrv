@@ -78,6 +78,15 @@ const projectSchema = new Schema<IProject>(
             default: 0,
             min: 0,
         },
+        totalMinted: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        onChainMinted: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,

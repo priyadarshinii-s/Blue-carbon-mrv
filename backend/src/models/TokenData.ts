@@ -27,6 +27,12 @@ const tokenDataSchema = new Schema<ITokenData>(
         },
         metadataIPFS: { type: String },
         mintTxHash: { type: String },
+        onChainStatus: {
+            type: String,
+            enum: ['pending', 'confirmed', 'failed'],
+            default: 'pending',
+        },
+        blockNumber: { type: Number },
     },
     {
         timestamps: true,

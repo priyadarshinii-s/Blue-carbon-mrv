@@ -18,6 +18,8 @@ import adminRoutes from './routes/admin.routes';
 import reportRoutes from './routes/report.routes';
 import settingsRoutes from './routes/settings.routes';
 import uploadRoutes from './routes/upload.routes';
+import { startBlockchainListener } from './services/blockchain.listener';
+import { blockchainHealthCheck, isBlockchainConfigured } from './services/blockchain.service';
 
 dotenv.config();
 
@@ -69,13 +71,24 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.use(mongoSanitize());
 
-app.get('/api/health', (_req, res) => {
+app.get('/api/health', async (_req, res) => {
+    let blockchain = null;
+    try {
+        const configured = await isBlockchainConfigured();
+        if (configured) {
+            blockchain = await blockchainHealthCheck();
+        }
+    } catch {
+        blockchain = { connected: false, error: 'Failed to connect' };
+    }
+
     res.status(200).json({
         success: true,
         data: {
             status: 'OK',
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
+            blockchain,
         },
     });
 });
@@ -102,6 +115,11 @@ const startServer = async (): Promise<void> => {
         app.listen(PORT, () => {
             logger.info(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
             logger.info(`📋 API docs: http://localhost:${PORT}/api/health`);
+        });
+
+        // Start blockchain event listener (non-blocking)
+        startBlockchainListener().catch((err) => {
+            logger.warn({ err }, 'Blockchain event listener failed to start — on-chain sync disabled');
         });
     } catch (error) {
         logger.fatal({ err: error }, 'Failed to start server');
