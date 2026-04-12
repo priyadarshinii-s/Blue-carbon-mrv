@@ -1,8 +1,8 @@
 {
-  "address": "0xfBA277fA09538F492CB910bfe38189968b7e87a0",
+  "address": "0xF7cf7015Fe01346ba5cAa356DB83832Fc0573592",
   "network": "amoy",
   "chainId": 80002,
-  "deployedAt": "2026-04-12T19:22:06.931Z",
+  "deployedAt": "2026-04-12T20:35:59.764Z",
   "abi": [
     {
       "inputs": [],
@@ -1004,25 +1004,6 @@
           "internalType": "uint256",
           "name": "limit",
           "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "projectId",
-          "type": "string"
-        }
-      ],
-      "name": "getProjectMetadata",
-      "outputs": [
-        {
-          "internalType": "string[]",
-          "name": "",
-          "type": "string[]"
         }
       ],
       "stateMutability": "view",
