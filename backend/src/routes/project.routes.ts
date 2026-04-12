@@ -8,6 +8,7 @@ import {
     getPublicMapPins,
     getProjectOnChainEvents,
 } from '../controllers/project.controller';
+import { confirmProjectTx } from '../controllers/confirm-tx.controller';
 import { protect } from '../middlewares/auth';
 import { restrictTo } from '../middlewares/roleGuard';
 import { validate } from '../middlewares/validate';
@@ -33,6 +34,8 @@ router.get('/', getProjects);
 router.get('/:id', getProject);
 
 router.get('/:id/on-chain-events', getProjectOnChainEvents);
+
+router.post('/:id/confirm-tx', confirmProjectTx);
 
 router.patch(
     '/:id',

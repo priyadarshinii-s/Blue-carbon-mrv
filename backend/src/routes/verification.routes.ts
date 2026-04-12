@@ -4,6 +4,7 @@ import {
     reviewSubmission,
     getProjectVerifications,
 } from '../controllers/verification.controller';
+import { confirmVerificationTx } from '../controllers/confirm-tx.controller';
 import { getVerificationHistory } from '../controllers/report.controller';
 import { protect } from '../middlewares/auth';
 import { restrictTo } from '../middlewares/roleGuard';
@@ -27,5 +28,7 @@ router.post(
 router.get('/history', restrictTo(UserRole.VALIDATOR), getVerificationHistory);
 
 router.get('/project/:projectId', getProjectVerifications);
+
+router.post('/:submissionId/confirm-tx', restrictTo(UserRole.VALIDATOR), confirmVerificationTx);
 
 export default router;

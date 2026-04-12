@@ -48,6 +48,7 @@ export const projectsAPI = {
     create: (data) => api.post("/projects", data),
     update: (id, data) => api.patch(`/projects/${id}`, data),
     getOnChainEvents: (id) => api.get(`/projects/${id}/on-chain-events`),
+    confirmTx: (id, data) => api.post(`/projects/${id}/confirm-tx`, data),
 };
 
 export const submissionsAPI = {
@@ -55,6 +56,7 @@ export const submissionsAPI = {
     getMy: () => api.get("/submissions/my"),
     getById: (id) => api.get(`/submissions/${id}`),
     getByProject: (projectId) => api.get(`/submissions/project/${projectId}`),
+    confirmTx: (id, data) => api.post(`/submissions/${id}/confirm-tx`, data),
 };
 
 export const verificationsAPI = {
@@ -63,6 +65,7 @@ export const verificationsAPI = {
         api.post(`/verifications/${submissionId}/review`, data),
     getHistory: () => api.get("/verifications/history"),
     getByProject: (projectId) => api.get(`/verifications/project/${projectId}`),
+    confirmTx: (submissionId, data) => api.post(`/verifications/${submissionId}/confirm-tx`, data),
 };
 
 export const adminAPI = {
@@ -73,6 +76,7 @@ export const adminAPI = {
         api.patch(`/admin/users/${userId}/assign-project`, data),
     getMintQueue: () => api.get("/admin/mint-queue"),
     mint: (projectId, data) => api.post(`/admin/mint/${projectId}`, data),
+    confirmMintTx: (projectId, data) => api.post(`/admin/mint/${projectId}/confirm-tx`, data),
 };
 
 export const reportsAPI = {

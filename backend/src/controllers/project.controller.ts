@@ -47,120 +47,28 @@ export const createProject = catchAsync(async (req: Request, res: Response): Pro
         meta: { projectName: project.projectName, projectType: project.projectType },
     });
 
-    // ── Step 2: Register on-chain (non-blocking to the HTTP response) ──
-    // We attempt the blockchain call but NEVER roll back the MongoDB document
-    // on failure — the DB is the source of truth; on-chain is eventually consistent.
-    const blockchainEnabled = await isBlockchainConfigured();
-
-    if (blockchainEnabled) {
-        // Idempotency guard: project is brand-new so onChainTxHash will always be unset here,
-        // but the guard pattern is established for retry scenarios (e.g. server restart mid-tx).
-        if (!project.onChainTxHash) {
-            try {
-                // Build an IPFS metadata URI if possible; fall back to a placeholder URI.
-                // The URI just needs to be non-empty for the contract.
-                let metadataURI = `mrv://project/${projectId}`;
-                try {
-                    const ipfsCID = await uploadJSONToIPFS(
-                        {
-                            projectId,
-                            projectName: project.projectName,
-                            projectType: project.projectType,
-                            location: project.location,
-                            createdAt: project.createdAt,
-                        },
-                        `${projectId}-registration`
-                    );
-                    metadataURI = ipfsCID; // IPFS CID / URI from Pinata
-                } catch (ipfsErr) {
-                    // IPFS failure is non-fatal — use the placeholder URI
-                    logger.warn({ err: ipfsErr, projectId }, 'IPFS upload failed for project registration metadata — using fallback URI');
-                }
-
-                const receipt = await registerProjectOnChain(
-                    projectId,
-                    req.user.walletAddress,
-                    metadataURI
-                );
-
-                // ── Step 3: Update MongoDB ONLY after confirmed tx ──
-                const explorerUrl = getExplorerTxUrl(receipt.txHash);
-
-                await Project.findOneAndUpdate(
-                    { projectId },
-                    {
-                        $set: {
-                            onChainTxHash: receipt.txHash,
-                            registeredBlock: receipt.blockNumber,
-                        },
-                        $push: {
-                            blockchainTxHistory: {
-                                action: 'PROJECT_REGISTERED',
-                                txHash: receipt.txHash,
-                                explorerUrl,
-                                blockNumber: receipt.blockNumber,
-                                timestamp: new Date(),
-                            },
-                        },
-                    }
-                );
-
-                // Refresh the response object to include tx data
-                project.onChainTxHash = receipt.txHash;
-                project.registeredBlock = receipt.blockNumber;
-
-                logger.info(
-                    { projectId, txHash: receipt.txHash, blockNumber: receipt.blockNumber },
-                    'Project registered on-chain'
-                );
-
-                logAudit(
-                    AuditAction.PROJECT_REGISTERED_ON_CHAIN,
-                    req.user.walletAddress,
-                    `Project "${project.projectName}" registered on-chain`,
-                    {
-                        targetId: projectId,
-                        txHash: receipt.txHash,
-                        meta: {
-                            blockNumber: receipt.blockNumber,
-                            gasUsed: receipt.gasUsed,
-                            metadataURI,
-                        },
-                    }
-                );
-            } catch (blockchainErr: unknown) {
-                // ── On-chain failure: log to AuditLog, do NOT throw ──
-                // The project exists in MongoDB and is usable;
-                // retrying registration can be done via admin tooling.
-                const errorMsg = blockchainErr instanceof Error
-                    ? blockchainErr.message
-                    : 'Unknown blockchain error';
-
-                logger.error(
-                    { err: blockchainErr, projectId },
-                    'On-chain project registration failed — MongoDB state preserved'
-                );
-
-                logAudit(
-                    AuditAction.BLOCKCHAIN_TX_FAILED,
-                    req.user.walletAddress,
-                    `On-chain registration failed for project ${projectId}: ${errorMsg}`,
-                    {
-                        targetId: projectId,
-                        meta: { trigger: 'registerProject', error: errorMsg },
-                    }
-                );
-            }
-        } else {
-            logger.info({ projectId, onChainTxHash: project.onChainTxHash }, 'Project already registered on-chain — skipping');
-        }
-    } else {
-        logger.warn({ projectId }, 'Blockchain not configured — skipping on-chain registration');
+    // ── Step 2: Upload Metadata to IPFS (for the frontend to use in wallet tx) ──
+    let metadataURI = `mrv://project/${projectId}`;
+    try {
+        const ipfsCID = await uploadJSONToIPFS(
+            {
+                projectId,
+                projectName: project.projectName,
+                projectType: project.projectType,
+                location: project.location,
+                createdAt: project.createdAt,
+            },
+            `${projectId}-registration`
+        );
+        metadataURI = ipfsCID; // IPFS CID / URI from Pinata
+    } catch (ipfsErr) {
+        logger.warn({ err: ipfsErr, projectId }, 'IPFS upload failed for project registration metadata — using fallback URI');
     }
 
+    // Return the project data and the IPFS URI so the frontend can trigger the wallet tx
     res.status(201).json({
         success: true,
-        data: { project },
+        data: { project, metadataURI },
     });
 });
 

@@ -8,6 +8,8 @@ import TxSuccessScreen from "../../components/shared/TxSuccessScreen";
 import ConfirmRejectModal from "../../components/common/ConfirmRejectModal";
 import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 import { verificationsAPI, projectsAPI, adminAPI } from "../../services/api";
+import { useAccount } from "wagmi";
+import { useApproveProject } from "../../hooks/useContractActions";
 
 
 
@@ -19,6 +21,9 @@ const wizardSteps = [
 ];
 
 const VerificationQueue = () => {
+  const { address } = useAccount();
+  const { writeAsync } = useApproveProject();
+  
   const [selected, setSelected] = useState(null);
   const [queue, setQueue] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,14 +129,34 @@ const VerificationQueue = () => {
         remarks: comment,
         approvedCredits: decision === "approved" ? calculatedCredits : 0,
       });
-      // Capture actual txHash from blockchain execution
-      setTxHash(res.data?.data?.verification?.approvalTxHash || "");
-    } catch {
-      /* ignore */
+
+      const verification = res.data?.data?.verification;
+      const reportURI = res.data?.data?.reportURI;
+      let finalTxHash = verification?.approvalTxHash || "";
+
+      if (decision === "approved" && writeAsync && address && selected.project && reportURI) {
+        try {
+          console.log("Triggering MetaMask for project approval...");
+          const txHash = await writeAsync(selected.project, address, reportURI);
+          finalTxHash = txHash;
+          setTxHash(txHash);
+
+          // Confirm tx with backend
+          await verificationsAPI.confirmTx(selected.submissionId, { txHash });
+        } catch (txErr) {
+          console.error("Wallet transaction failed:", txErr);
+          throw new Error("Transaction was rejected or failed. You will need to retry from the dashboard.");
+        }
+      }
+
+      setQueue((prev) => prev.filter((q) => q.id !== selected.id));
+      setVerdict(decision);
+    } catch (err) {
+      console.error("Review failed:", err);
+      // Depending on requirements we might show an alert here
+      alert(err.message || "Failed to process the review.");
     }
 
-    setQueue((prev) => prev.filter((q) => q.id !== selected.id));
-    setVerdict(decision);
     setSaving(false);
   };
 

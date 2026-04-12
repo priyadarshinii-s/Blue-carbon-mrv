@@ -42,34 +42,36 @@ async function main() {
     const VALIDATOR_ROLE: string = await (token as any).VALIDATOR_ROLE();
     const FIELD_OFFICER_ROLE: string = await (token as any).FIELD_OFFICER_ROLE();
 
-    // ── Grant roles to the backend wallet ───────────────────
-    // BACKEND_WALLET is the address derived from PRIVATE_KEY used by blockchain.service.ts.
-    // It needs ALL roles because the backend signs every lifecycle transaction with one key.
-    const backendWallet = process.env.BACKEND_WALLET || process.env.ADMIN_ADDRESS;
+    // ── Grant roles to the deployer wallet ───────────────────
+    // The deployer gets ADMIN_ROLE via constructor. We also grant VALIDATOR_ROLE
+    // and FIELD_OFFICER_ROLE so the deployer wallet can call ALL functions.
+    // This is the wallet derived from PRIVATE_KEY in .env.
+    console.log(`\n  Granting all roles to deployer: ${deployer.address}`);
 
-    if (!backendWallet) {
-        console.warn(
-            "  ⚠️  BACKEND_WALLET env var not set — skipping role grants.\n" +
-            "     Set BACKEND_WALLET=<address derived from PRIVATE_KEY> and re-run."
-        );
-    } else if (backendWallet.toLowerCase() !== deployer.address.toLowerCase()) {
-        // Grant ADMIN_ROLE (covers mintCredits, registerProject, anchorSubmission, approveProject)
-        let tx = await (token as any).grantRole(ADMIN_ROLE, backendWallet);
+    // Deployer already has DEFAULT_ADMIN_ROLE + ADMIN_ROLE from constructor
+    console.log(`  ✅ ADMIN_ROLE        → ${deployer.address} (via constructor)`);
+
+    let tx = await (token as any).grantRole(VALIDATOR_ROLE, deployer.address);
+    await tx.wait();
+    console.log(`  ✅ VALIDATOR_ROLE    → ${deployer.address}`);
+
+    tx = await (token as any).grantRole(FIELD_OFFICER_ROLE, deployer.address);
+    await tx.wait();
+    console.log(`  ✅ FIELD_OFFICER_ROLE→ ${deployer.address}`);
+
+    // ── Also grant roles to BACKEND_WALLET if different from deployer ──
+    const backendWallet = process.env.BACKEND_WALLET;
+    if (backendWallet && backendWallet.toLowerCase() !== deployer.address.toLowerCase()) {
+        console.log(`\n  Granting roles to BACKEND_WALLET: ${backendWallet}`);
+        tx = await (token as any).grantRole(ADMIN_ROLE, backendWallet);
         await tx.wait();
         console.log(`  ✅ ADMIN_ROLE        → ${backendWallet}`);
-
-        // Grant VALIDATOR_ROLE (future: validator signs own transactions)
         tx = await (token as any).grantRole(VALIDATOR_ROLE, backendWallet);
         await tx.wait();
         console.log(`  ✅ VALIDATOR_ROLE    → ${backendWallet}`);
-
-        // Grant FIELD_OFFICER_ROLE (future: field officer signs own transactions)
         tx = await (token as any).grantRole(FIELD_OFFICER_ROLE, backendWallet);
         await tx.wait();
         console.log(`  ✅ FIELD_OFFICER_ROLE→ ${backendWallet}`);
-    } else {
-        // Deployer IS the backend wallet — already has all roles via constructor
-        console.log("  ℹ️  Deployer == backend wallet → roles already granted via constructor");
     }
 
     // ── Export ABI + address ────────────────────────────────

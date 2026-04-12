@@ -7,6 +7,7 @@ import {
     getMintQueue,
     mintCredits,
 } from '../controllers/admin.controller';
+import { confirmMintTx } from '../controllers/confirm-tx.controller';
 import { protect } from '../middlewares/auth';
 import { restrictTo } from '../middlewares/roleGuard';
 import { validate } from '../middlewares/validate';
@@ -28,5 +29,7 @@ router.patch('/users/:id/assign-project', validate(assignProjectSchema), assignU
 router.get('/mint-queue', getMintQueue);
 
 router.post('/mint/:projectId', validate(mintSchema), mintCredits);
+
+router.post('/mint/:projectId/confirm-tx', confirmMintTx);
 
 export default router;

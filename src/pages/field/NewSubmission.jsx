@@ -6,6 +6,8 @@ import DraftRecoveryBanner from "../../components/shared/DraftRecoveryBanner";
 import TxSuccessScreen from "../../components/shared/TxSuccessScreen";
 import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 import { projectsAPI, submissionsAPI, uploadAPI } from "../../services/api";
+import { useAccount } from "wagmi";
+import { useAnchorSubmission } from "../../hooks/useContractActions";
 
 const TYPE_CONFIG = {
   MANGROVE: {
@@ -70,9 +72,12 @@ const TYPE_CONFIG = {
 const NewSubmission = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { address } = useAccount();
+  const { writeAsync } = useAnchorSubmission();
   const preselectedProject = searchParams.get("project") || "";
 
   const [projects, setProjects] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
   const [selectedProjectType, setSelectedProjectType] = useState("MANGROVE");
 
   const [form, setForm] = useState({
@@ -238,7 +243,30 @@ const NewSubmission = () => {
 
       console.log("Submitting field data:", payload);
       const res = await submissionsAPI.create(payload);
-      setSubmitted(res.data.data.submission);
+      const submission = res.data.data.submission;
+      const dataHash = res.data.data.dataHash;
+
+      let finalTxHash = submission.anchorTxHash || submission.blockchainSubmissionHash;
+
+      if (writeAsync && address && submission.submissionId && dataHash) {
+        try {
+          console.log("Triggering MetaMask for submission anchoring...");
+          const txHash = await writeAsync(submission.projectId, submission.submissionId, dataHash);
+          finalTxHash = txHash;
+          console.log("Transaction sent:", txHash);
+
+          await submissionsAPI.confirmTx(submission.submissionId, { txHash });
+        } catch (txErr) {
+          console.error("Wallet transaction failed:", txErr);
+          throw new Error("Transaction was rejected or failed. You will need to retry anchoring from the dashboard.");
+        }
+      }
+
+      setSubmitted({
+        id: submission.submissionId,
+        tx: finalTxHash,
+        name: `Submission for ${selectedProject?.projectName || "Project"}`,
+      });
     } catch (err) {
       console.error("Submission failed:", err);
       const msg = err.response?.data?.error?.message || err.message || "Submission failed. Please try again.";

@@ -9,6 +9,8 @@ import ConfirmationTxModal from "../../components/shared/ConfirmationTxModal";
 import ProjectSuccessScreen from "../../components/shared/ProjectSuccessScreen";
 import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 import { projectsAPI, uploadAPI } from "../../services/api";
+import { useAccount } from "wagmi";
+import { useRegisterProject } from "../../hooks/useContractActions";
 
 const DRAFT_KEY = "user_project_draft";
 const STEPS = ["Basic Details", "Location", "Evidence", "Timeline"];
@@ -29,6 +31,8 @@ const emptyForm = {
 
 const UserCreateProject = () => {
     const navigate = useNavigate();
+    const { address } = useAccount();
+    const { writeAsync } = useRegisterProject();
     const [step, setStep] = useState(0);
     const [form, setForm] = useState(emptyForm);
     const [errors, setErrors] = useState({});
@@ -237,10 +241,30 @@ const UserCreateProject = () => {
             console.log("Creating project with payload:", payload);
             const res = await projectsAPI.create(payload);
             const project = res.data.data.project || res.data.data;
+            const metadataURI = res.data.data.metadataURI;
+
+            let finalTxHash = project.onChainTxHash || project.blockchainProjectHash;
+
+            // If we have metamask and the backend didn't do it (it shouldn't anymore)
+            if (writeAsync && address && project.projectId && metadataURI) {
+                try {
+                    console.log("Triggering MetaMask for project registration...");
+                    const txHash = await writeAsync(project.projectId, address, metadataURI);
+                    finalTxHash = txHash;
+                    console.log("Transaction sent:", txHash);
+
+                    // Confirm tx with the backend
+                    await projectsAPI.confirmTx(project.projectId, { txHash });
+                } catch (txErr) {
+                    console.error("Wallet transaction failed:", txErr);
+                    throw new Error("Transaction was rejected or failed. You will need to retry from the project dashboard.");
+                }
+            }
+
             localStorage.removeItem(DRAFT_KEY);
             setSuccess({
                 id: project.projectId || project._id,
-                tx: project.onChainTxHash || project.blockchainProjectHash || null,
+                tx: finalTxHash,
                 name: form.name,
             });
         } catch (err) {

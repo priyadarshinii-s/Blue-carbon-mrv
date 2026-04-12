@@ -5,6 +5,7 @@ import {
     getSubmission,
     getProjectSubmissions,
 } from '../controllers/submission.controller';
+import { confirmSubmissionTx } from '../controllers/confirm-tx.controller';
 import { protect } from '../middlewares/auth';
 import { restrictTo } from '../middlewares/roleGuard';
 import { validate } from '../middlewares/validate';
@@ -27,5 +28,7 @@ router.get('/my', restrictTo(UserRole.FIELD_OFFICER), getMySubmissions);
 router.get('/project/:projectId', getProjectSubmissions);
 
 router.get('/:id', getSubmission);
+
+router.post('/:id/confirm-tx', restrictTo(UserRole.FIELD_OFFICER), confirmSubmissionTx);
 
 export default router;

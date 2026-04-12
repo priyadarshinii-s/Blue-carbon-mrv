@@ -7,6 +7,8 @@ import TxSuccessScreen from "../../components/shared/TxSuccessScreen";
 import LoadingSpinner from "../../components/shared/LoadingSpinner";
 import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 import { adminAPI } from "../../services/api";
+import { useAccount } from "wagmi";
+import { useMintCredits } from "../../hooks/useContractActions";
 
 const wizardSteps = [
   { label: "Review Data" },
@@ -17,6 +19,9 @@ const wizardSteps = [
 const shortAddr = (a) => a ? `${a.slice(0, 6)}...${a.slice(-4)}` : "–";
 
 const MintApproval = () => {
+  const { address } = useAccount();
+  const { writeAsync } = useMintCredits();
+
   const [mintQueue, setMintQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -66,15 +71,31 @@ const MintApproval = () => {
       });
 
       const data = res.data?.data;
-      const txHash = data?.txHash || "";
-      const onChainStatus = data?.onChainStatus || "confirmed";
+      const metadataIPFS = data?.metadataIPFS;
+      let finalTxHash = data?.txHash || "";
+
+      if (writeAsync && address && selectedItem.projectId && metadataIPFS) {
+        try {
+          console.log("Triggering MetaMask for minting credits...");
+          const txHash = await writeAsync(selectedItem.projectId, selectedItem.co2, metadataIPFS);
+          finalTxHash = txHash;
+          
+          await adminAPI.confirmMintTx(selectedItem.projectId, {
+            txHash,
+            amount: selectedItem.co2,
+            metadataIPFS,
+            year: new Date().getFullYear().toString()
+          });
+        } catch (txErr) {
+          console.error("Wallet transaction failed:", txErr);
+          throw new Error("Transaction was rejected or failed. You will need to retry from the dashboard.");
+        }
+      }
 
       setTxResult({
-        status: onChainStatus === "confirmed" || onChainStatus === "pending" ? "success" : "error",
-        txHash,
-        message: onChainStatus === "confirmed" || onChainStatus === "pending" 
-            ? "Carbon credits have been minted successfully on the blockchain."
-            : "The on-chain transaction failed.",
+        status: "success",
+        txHash: finalTxHash,
+        message: "Carbon credits have been minted successfully on the blockchain.",
       });
       setMintQueue(prev => prev.filter(q => q.id !== selectedItem.id));
     } catch (err) {

@@ -131,6 +131,16 @@ contract CarbonCreditToken is ERC20, AccessControl, ReentrancyGuard, Pausable {
     error EmptyMetadataURI();
     error ZeroDataHash();
 
+    // ──────────────────── Custom Modifiers ────────────────────
+
+    /// @dev Allows callers with EITHER of two roles
+    modifier onlyEitherRole(bytes32 roleA, bytes32 roleB) {
+        if (!hasRole(roleA, msg.sender) && !hasRole(roleB, msg.sender)) {
+            revert AccessControlUnauthorizedAccount(msg.sender, roleA);
+        }
+        _;
+    }
+
     // ──────────────────── Constructor ────────────────────
     constructor() ERC20("Blue Carbon Credit", "BCC") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -151,7 +161,7 @@ contract CarbonCreditToken is ERC20, AccessControl, ReentrancyGuard, Pausable {
         string calldata projectId,
         address ownerWallet,
         string calldata metadataURI
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
+    ) external whenNotPaused {
         if (bytes(projectId).length == 0) revert EmptyProjectId();
         if (bytes(metadataURI).length == 0) revert EmptyMetadataURI();
         // Idempotency: revert if already registered (backend checks DB flag, but belt-and-suspenders)
@@ -175,7 +185,7 @@ contract CarbonCreditToken is ERC20, AccessControl, ReentrancyGuard, Pausable {
         string calldata projectId,
         string calldata submissionId,
         bytes32 dataHash
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
+    ) external onlyEitherRole(FIELD_OFFICER_ROLE, ADMIN_ROLE) whenNotPaused {
         // ADMIN_ROLE used since backend signs all txs with one admin key.
         // In a fully decentralised setup this would be FIELD_OFFICER_ROLE.
         if (bytes(projectId).length == 0) revert EmptyProjectId();
@@ -203,7 +213,7 @@ contract CarbonCreditToken is ERC20, AccessControl, ReentrancyGuard, Pausable {
         string calldata projectId,
         address validatorWallet,
         string calldata verificationReportURI
-    ) external onlyRole(ADMIN_ROLE) whenNotPaused {
+    ) external onlyEitherRole(VALIDATOR_ROLE, ADMIN_ROLE) whenNotPaused {
         if (bytes(projectId).length == 0) revert EmptyProjectId();
         if (bytes(verificationReportURI).length == 0) revert EmptyMetadataURI();
         if (!_registeredProjects[projectId]) revert ProjectNotRegistered(projectId);
