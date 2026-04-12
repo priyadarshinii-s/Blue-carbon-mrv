@@ -42,6 +42,7 @@ const UserCreateProject = () => {
     const [uploadProgress, setUploadProgress] = useState({});
     const [success, setSuccess] = useState(null);
     const [apiError, setApiError] = useState("");
+    const [submitStep, setSubmitStep] = useState("");
     const draftTimer = useRef(null);
 
     useEffect(() => {
@@ -184,20 +185,26 @@ const UserCreateProject = () => {
         const typeMap = { mangrove: "MANGROVE", seagrass: "SEAGRASS", saltmarsh: "SALTMARSH", mixed: "MIXED" };
         const projectType = typeMap[form.ecosystemType?.toLowerCase()] || form.ecosystemType?.toUpperCase() || "MANGROVE";
 
+        const timings = {};
+        const t0 = performance.now();
+
         try {
-            // Combine photos and videos into a single IPFS Folder upload
+            // ── STEP 1: Upload photos to IPFS (this is the slow step) ──
+            setSubmitStep("Uploading photos to IPFS…");
             const allEvidence = [...form.photos, ...form.videos];
             let photoUrls = [];
 
             if (allEvidence.length > 0) {
-                console.log("Uploading", allEvidence.length, "baseline files to IPFS folder...");
+                console.log("⏱️ [Step 1] Uploading", allEvidence.length, "baseline files to IPFS folder...");
+                const t1 = performance.now();
                 const uploadRes = await uploadAPI.uploadPhotos(allEvidence);
+                timings.ipfsUpload = ((performance.now() - t1) / 1000).toFixed(1);
+                console.log(`⏱️ [Step 1] IPFS upload took ${timings.ipfsUpload}s`);
                 console.log("Upload response:", uploadRes.data);
                 if (!uploadRes.data.success) {
                     throw new Error("Failed to upload evidence to IPFS. Please try again.");
                 }
                 const d = uploadRes.data.data;
-                // Store the individual file URLs so images render directly
                 if (d.files && d.files.length > 0) {
                     photoUrls = d.files.map(f => f.url);
                 } else if (d.folderUrl) {
@@ -223,7 +230,8 @@ const UserCreateProject = () => {
                 };
             }
 
-            // Step 3: Create the project with the single folder URL
+            // ── STEP 2: Create project in backend (MongoDB + IPFS metadata) ──
+            setSubmitStep("Creating project record…");
             const payload = {
                 projectName: form.name,
                 projectType,
@@ -238,12 +246,23 @@ const UserCreateProject = () => {
                 baselineVideos: [],
             };
 
-            console.log("Creating project with payload:", payload);
+            console.log("⏱️ [Step 2] Creating project with payload:", payload);
+            const t2 = performance.now();
             const res = await projectsAPI.create(payload);
+            timings.apiCreate = ((performance.now() - t2) / 1000).toFixed(1);
+            console.log(`⏱️ [Step 2] API create took ${timings.apiCreate}s`);
+
             const project = res.data.data.project || res.data.data;
             const metadataURI = res.data.data.metadataURI;
 
             let finalTxHash = project.onChainTxHash || project.blockchainProjectHash;
+
+            // ── STEP 3: Wallet transaction ──
+            setSubmitStep("Waiting for wallet signature…");
+            console.log("⏱️ [Step 3] Pre-flight checks:");
+            console.log("  → Wallet address:", address || "NOT CONNECTED");
+            console.log("  → writeAsync available:", !!writeAsync);
+            console.log("  → metadataURI:", metadataURI);
 
             if (!address) {
                 alert("Please connect your Web3 wallet (MetaMask) to sign the transaction.");
@@ -257,17 +276,23 @@ const UserCreateProject = () => {
             }
 
             try {
-                console.log("Triggering MetaMask for project registration...");
+                console.log("⏱️ [Step 3] Triggering MetaMask for project registration...");
+                const t3 = performance.now();
                 const txHash = await writeAsync(project.projectId, address, metadataURI);
+                timings.walletTx = ((performance.now() - t3) / 1000).toFixed(1);
+                console.log(`⏱️ [Step 3] Wallet tx took ${timings.walletTx}s`);
                 finalTxHash = txHash;
                 console.log("Transaction sent:", txHash);
 
-                // Confirm tx with the backend
+                setSubmitStep("Confirming transaction…");
                 await projectsAPI.confirmTx(project.projectId, { txHash });
             } catch (txErr) {
                 console.error("Wallet transaction failed:", txErr);
                 throw new Error("Transaction was rejected or failed. You will need to retry from the project dashboard.");
             }
+
+            timings.total = ((performance.now() - t0) / 1000).toFixed(1);
+            console.log("⏱️ Total creation time:", timings.total + "s", timings);
 
             localStorage.removeItem(DRAFT_KEY);
             setSuccess({
@@ -277,10 +302,13 @@ const UserCreateProject = () => {
             });
         } catch (err) {
             console.error("Project creation failed:", err);
+            timings.total = ((performance.now() - t0) / 1000).toFixed(1);
+            console.log("⏱️ Failed after:", timings.total + "s", timings);
             const msg = err.response?.data?.message || err.response?.data?.error?.message || err.message || "Failed to create project. Please try again.";
             setApiError(msg);
         } finally {
             setSubmitting(false);
+            setSubmitStep("");
         }
     };
 
@@ -293,7 +321,7 @@ const UserCreateProject = () => {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "20px" }}>
                 <div style={{ fontSize: "64px", animation: "spin 2s linear infinite" }}>🌿</div>
                 <h2 style={{ fontSize: "20px", color: "#0f2a44" }}>Registering your project...</h2>
-                <p style={{ color: "#6b7280", fontSize: "14px" }}>Uploading to IPFS and writing to Polygon</p>
+                <p style={{ color: "#6b7280", fontSize: "14px" }}>{submitStep || "Uploading to IPFS and writing to Polygon"}</p>
             </div>
         );
     }

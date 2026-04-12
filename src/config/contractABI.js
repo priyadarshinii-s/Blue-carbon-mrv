@@ -3,11 +3,17 @@
  *
  * Contract address and ABI for frontend interaction via wagmi/viem.
  * Only includes the functions the frontend needs to call directly.
+ *
+ * CONTRACT_ADDRESS and CHAIN_ID are read from env vars (set in .env):
+ *   VITE_CONTRACT_ADDRESS  — deployed contract address
+ *   VITE_CHAIN_ID          — target chain ID (80002 for Polygon Amoy)
  */
 
-export const CONTRACT_ADDRESS = '0xfBA277fA09538F492CB910bfe38189968b7e87a0';
+export const CONTRACT_ADDRESS =
+  import.meta.env.VITE_CONTRACT_ADDRESS || '0xfBA277fA09538F492CB910bfe38189968b7e87a0';
 
-export const CHAIN_ID = 80002; // Localhost
+export const CHAIN_ID =
+  Number(import.meta.env.VITE_CHAIN_ID) || 80002; // Polygon Amoy
 
 export const CONTRACT_ABI = [
   // ── Write Functions ──────────────────────────────────────

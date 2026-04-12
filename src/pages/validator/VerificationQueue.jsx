@@ -135,6 +135,11 @@ const VerificationQueue = () => {
       let finalTxHash = verification?.approvalTxHash || "";
 
       if (decision === "approved") {
+        console.log("⏱️ [Verification] Pre-flight wallet checks:");
+        console.log("  → Wallet address:", address || "NOT CONNECTED");
+        console.log("  → writeAsync available:", !!writeAsync);
+        console.log("  → reportURI:", reportURI);
+
         if (!address) {
           alert("Please connect your Web3 wallet (MetaMask) to approve this project on-chain.");
           throw new Error("Wallet not connected.");
@@ -144,8 +149,10 @@ const VerificationQueue = () => {
         }
 
         try {
-          console.log("Triggering MetaMask for project approval...");
+          console.log("⏱️ [Verification] Triggering MetaMask for project approval...");
+          const t1 = performance.now();
           const txHash = await writeAsync(selected.project, address, reportURI);
+          console.log(`⏱️ [Verification] Wallet tx took ${((performance.now() - t1) / 1000).toFixed(1)}s`);
           finalTxHash = txHash;
           setTxHash(txHash);
 

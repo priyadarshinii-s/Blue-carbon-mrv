@@ -74,6 +74,11 @@ const MintApproval = () => {
       const metadataIPFS = data?.metadataIPFS;
       let finalTxHash = data?.txHash || "";
 
+      console.log("⏱️ [Mint] Pre-flight wallet checks:");
+      console.log("  → Wallet address:", address || "NOT CONNECTED");
+      console.log("  → writeAsync available:", !!writeAsync);
+      console.log("  → metadataIPFS:", metadataIPFS);
+
       if (!address) {
         alert("Please connect your Web3 wallet (MetaMask) to mint carbon credits.");
         throw new Error("Wallet not connected.");
@@ -83,8 +88,10 @@ const MintApproval = () => {
       }
 
       try {
-        console.log("Triggering MetaMask for minting credits...");
+        console.log("⏱️ [Mint] Triggering MetaMask for minting credits...");
+        const t1 = performance.now();
         const txHash = await writeAsync(selectedItem.projectId, selectedItem.co2, metadataIPFS);
+        console.log(`⏱️ [Mint] Wallet tx took ${((performance.now() - t1) / 1000).toFixed(1)}s`);
         finalTxHash = txHash;
         
         await adminAPI.confirmMintTx(selectedItem.projectId, {

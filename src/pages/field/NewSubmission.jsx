@@ -248,6 +248,11 @@ const NewSubmission = () => {
 
       let finalTxHash = submission.anchorTxHash || submission.blockchainSubmissionHash;
 
+      console.log("⏱️ [Submission] Pre-flight wallet checks:");
+      console.log("  → Wallet address:", address || "NOT CONNECTED");
+      console.log("  → writeAsync available:", !!writeAsync);
+      console.log("  → dataHash:", dataHash);
+
       if (!address) {
         alert("Please connect your Web3 wallet (MetaMask) to anchor this submission on-chain.");
         throw new Error("Wallet not connected.");
@@ -257,8 +262,10 @@ const NewSubmission = () => {
       }
 
       try {
-        console.log("Triggering MetaMask for submission anchoring...");
+        console.log("⏱️ [Submission] Triggering MetaMask for submission anchoring...");
+        const t1 = performance.now();
         const txHash = await writeAsync(submission.projectId, submission.submissionId, dataHash);
+        console.log(`⏱️ [Submission] Wallet tx took ${((performance.now() - t1) / 1000).toFixed(1)}s`);
         finalTxHash = txHash;
         console.log("Transaction sent:", txHash);
 
