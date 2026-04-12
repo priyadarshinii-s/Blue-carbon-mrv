@@ -5,9 +5,9 @@
  * Only includes the functions the frontend needs to call directly.
  */
 
-export const CONTRACT_ADDRESS = '0x53F9aD10d5aC5EC09279623EB2972Bed690875E5';
+export const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 
-export const CHAIN_ID = 80002; // Polygon Amoy
+export const CHAIN_ID = 31337; // Localhost
 
 export const CONTRACT_ABI = [
   // ── Write Functions ──────────────────────────────────────

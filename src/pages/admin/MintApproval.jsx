@@ -74,22 +74,28 @@ const MintApproval = () => {
       const metadataIPFS = data?.metadataIPFS;
       let finalTxHash = data?.txHash || "";
 
-      if (writeAsync && address && selectedItem.projectId && metadataIPFS) {
-        try {
-          console.log("Triggering MetaMask for minting credits...");
-          const txHash = await writeAsync(selectedItem.projectId, selectedItem.co2, metadataIPFS);
-          finalTxHash = txHash;
-          
-          await adminAPI.confirmMintTx(selectedItem.projectId, {
-            txHash,
-            amount: selectedItem.co2,
-            metadataIPFS,
-            year: new Date().getFullYear().toString()
-          });
-        } catch (txErr) {
-          console.error("Wallet transaction failed:", txErr);
-          throw new Error("Transaction was rejected or failed. You will need to retry from the dashboard.");
-        }
+      if (!address) {
+        alert("Please connect your Web3 wallet (MetaMask) to mint carbon credits.");
+        throw new Error("Wallet not connected.");
+      }
+      if (!writeAsync || !metadataIPFS) {
+        throw new Error("Smart contract connection or metadata IPFS missing.");
+      }
+
+      try {
+        console.log("Triggering MetaMask for minting credits...");
+        const txHash = await writeAsync(selectedItem.projectId, selectedItem.co2, metadataIPFS);
+        finalTxHash = txHash;
+        
+        await adminAPI.confirmMintTx(selectedItem.projectId, {
+          txHash,
+          amount: selectedItem.co2,
+          metadataIPFS,
+          year: new Date().getFullYear().toString()
+        });
+      } catch (txErr) {
+        console.error("Wallet transaction failed:", txErr);
+        throw new Error("Transaction was rejected or failed. You will need to retry from the dashboard.");
       }
 
       setTxResult({

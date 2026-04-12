@@ -248,18 +248,24 @@ const NewSubmission = () => {
 
       let finalTxHash = submission.anchorTxHash || submission.blockchainSubmissionHash;
 
-      if (writeAsync && address && submission.submissionId && dataHash) {
-        try {
-          console.log("Triggering MetaMask for submission anchoring...");
-          const txHash = await writeAsync(submission.projectId, submission.submissionId, dataHash);
-          finalTxHash = txHash;
-          console.log("Transaction sent:", txHash);
+      if (!address) {
+        alert("Please connect your Web3 wallet (MetaMask) to anchor this submission on-chain.");
+        throw new Error("Wallet not connected.");
+      }
+      if (!writeAsync || !dataHash) {
+        throw new Error("Smart contract connection or data hash missing.");
+      }
 
-          await submissionsAPI.confirmTx(submission.submissionId, { txHash });
-        } catch (txErr) {
-          console.error("Wallet transaction failed:", txErr);
-          throw new Error("Transaction was rejected or failed. You will need to retry anchoring from the dashboard.");
-        }
+      try {
+        console.log("Triggering MetaMask for submission anchoring...");
+        const txHash = await writeAsync(submission.projectId, submission.submissionId, dataHash);
+        finalTxHash = txHash;
+        console.log("Transaction sent:", txHash);
+
+        await submissionsAPI.confirmTx(submission.submissionId, { txHash });
+      } catch (txErr) {
+        console.error("Wallet transaction failed:", txErr);
+        throw new Error("Transaction was rejected or failed. You will need to retry anchoring from the dashboard.");
       }
 
       setSubmitted({
@@ -289,7 +295,7 @@ const NewSubmission = () => {
       />
     );
   }
-
+  
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "20px", flexWrap: "wrap", gap: "10px" }}>

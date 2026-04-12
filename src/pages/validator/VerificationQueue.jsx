@@ -134,7 +134,15 @@ const VerificationQueue = () => {
       const reportURI = res.data?.data?.reportURI;
       let finalTxHash = verification?.approvalTxHash || "";
 
-      if (decision === "approved" && writeAsync && address && selected.project && reportURI) {
+      if (decision === "approved") {
+        if (!address) {
+          alert("Please connect your Web3 wallet (MetaMask) to approve this project on-chain.");
+          throw new Error("Wallet not connected.");
+        }
+        if (!writeAsync || !reportURI) {
+          throw new Error("Smart contract connection or report URI missing.");
+        }
+
         try {
           console.log("Triggering MetaMask for project approval...");
           const txHash = await writeAsync(selected.project, address, reportURI);
@@ -165,7 +173,6 @@ const VerificationQueue = () => {
     setComment("");
     setExpandedPhotoIndex(0);
     setIsPhotoExpanded(false);
-    setIsModalZoomed(false);
     setCommentError("");
     setVerdict(null);
     setCalculationDone(false);

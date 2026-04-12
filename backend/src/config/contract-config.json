@@ -1,8 +1,8 @@
 {
-  "address": "0x53F9aD10d5aC5EC09279623EB2972Bed690875E5",
+  "address": "0xfBA277fA09538F492CB910bfe38189968b7e87a0",
   "network": "amoy",
   "chainId": 80002,
-  "deployedAt": "2026-04-12T18:16:37.633Z",
+  "deployedAt": "2026-04-12T19:22:06.931Z",
   "abi": [
     {
       "inputs": [],

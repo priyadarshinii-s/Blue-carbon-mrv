@@ -26,7 +26,7 @@ const ConfirmationTxModal = ({ projectName, onConfirm, onCancel, loading }) => {
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", marginBottom: "8px" }}>
                         <span style={{ color: "#6b7280" }}>Network</span>
-                        <span style={{ fontWeight: 600, color: "#7c3aed" }}>Polygon Mainnet</span>
+                        <span style={{ fontWeight: 600, color: "#7c3aed" }}>Polygon Amoy</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", borderTop: "1px solid #e5e7eb", paddingTop: "8px", marginTop: "4px" }}>
                         <span style={{ color: "#6b7280" }}>Estimated Gas</span>

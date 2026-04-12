@@ -81,7 +81,7 @@ export const createSubmission = catchAsync(async (req: Request, res: Response): 
 
     res.status(201).json({
         success: true,
-        data: { submission },
+        data: { submission, dataHash },
     });
 });
 

@@ -245,20 +245,28 @@ const UserCreateProject = () => {
 
             let finalTxHash = project.onChainTxHash || project.blockchainProjectHash;
 
-            // If we have metamask and the backend didn't do it (it shouldn't anymore)
-            if (writeAsync && address && project.projectId && metadataURI) {
-                try {
-                    console.log("Triggering MetaMask for project registration...");
-                    const txHash = await writeAsync(project.projectId, address, metadataURI);
-                    finalTxHash = txHash;
-                    console.log("Transaction sent:", txHash);
+            if (!address) {
+                alert("Please connect your Web3 wallet (MetaMask) to sign the transaction.");
+                throw new Error("Wallet not connected.");
+            }
+            if (!writeAsync) {
+                throw new Error("Smart contract actions are currently unavailable.");
+            }
+            if (!metadataURI) {
+                throw new Error("Backend did not return metadataURI for pinning.");
+            }
 
-                    // Confirm tx with the backend
-                    await projectsAPI.confirmTx(project.projectId, { txHash });
-                } catch (txErr) {
-                    console.error("Wallet transaction failed:", txErr);
-                    throw new Error("Transaction was rejected or failed. You will need to retry from the project dashboard.");
-                }
+            try {
+                console.log("Triggering MetaMask for project registration...");
+                const txHash = await writeAsync(project.projectId, address, metadataURI);
+                finalTxHash = txHash;
+                console.log("Transaction sent:", txHash);
+
+                // Confirm tx with the backend
+                await projectsAPI.confirmTx(project.projectId, { txHash });
+            } catch (txErr) {
+                console.error("Wallet transaction failed:", txErr);
+                throw new Error("Transaction was rejected or failed. You will need to retry from the project dashboard.");
             }
 
             localStorage.removeItem(DRAFT_KEY);
