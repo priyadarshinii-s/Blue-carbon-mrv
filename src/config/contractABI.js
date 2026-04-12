@@ -5,9 +5,9 @@
  * Only includes the functions the frontend needs to call directly.
  */
 
-export const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+export const CONTRACT_ADDRESS = '0xfBA277fA09538F492CB910bfe38189968b7e87a0';
 
-export const CHAIN_ID = 31337; // Localhost
+export const CHAIN_ID = 80002; // Localhost
 
 export const CONTRACT_ABI = [
   // ── Write Functions ──────────────────────────────────────
