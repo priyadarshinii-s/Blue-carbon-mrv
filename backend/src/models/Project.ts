@@ -73,6 +73,16 @@ const projectSchema = new Schema<IProject>(
         },
         validatorAssignedAt: { type: Date },
         blockchainProjectHash: { type: String },
+        // ── Blockchain lifecycle fields ──
+        onChainTxHash: {
+            type: String,
+            // Set after registerProject() tx is confirmed (Trigger 1)
+            // Used as idempotency guard: skip re-registration if already set
+        },
+        registeredBlock: {
+            type: Number,
+            // Block number at which the project was registered on-chain
+        },
         totalCarbonCredits: {
             type: Number,
             default: 0,
@@ -87,6 +97,13 @@ const projectSchema = new Schema<IProject>(
             type: Boolean,
             default: false,
         },
+        blockchainTxHistory: [{
+            action: { type: String, required: true },   // e.g. 'PROJECT_REGISTERED', 'FIELD_OFFICER_ASSIGNED', etc.
+            txHash: { type: String, required: true },
+            explorerUrl: { type: String },
+            blockNumber: { type: Number },
+            timestamp: { type: Date, default: Date.now },
+        }],
     },
     {
         timestamps: true,

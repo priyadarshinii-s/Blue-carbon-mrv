@@ -6,6 +6,7 @@ import {
     updateProject,
     getPublicProjects,
     getPublicMapPins,
+    getProjectOnChainEvents,
 } from '../controllers/project.controller';
 import { protect } from '../middlewares/auth';
 import { restrictTo } from '../middlewares/roleGuard';
@@ -30,6 +31,8 @@ router.post(
 router.get('/', getProjects);
 
 router.get('/:id', getProject);
+
+router.get('/:id/on-chain-events', getProjectOnChainEvents);
 
 router.patch(
     '/:id',

@@ -79,9 +79,19 @@ export interface IProject extends Document {
     assignedValidator?: string;
     validatorAssignedAt?: Date;
     blockchainProjectHash?: string;
+    // ── Blockchain lifecycle fields (added by integration) ──
+    onChainTxHash?: string;     // Trigger 1: registerProject tx hash
+    registeredBlock?: number;   // Trigger 1: block number at registration
     totalCarbonCredits: number;
     totalMinted: number;
     onChainMinted: boolean;
+    blockchainTxHistory: Array<{
+        action: string;
+        txHash: string;
+        explorerUrl?: string;
+        blockNumber?: number;
+        timestamp: Date;
+    }>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -114,6 +124,9 @@ export interface ISubmission extends Document {
     status: SubmissionStatus;
     validatorComments?: string;
     blockchainSubmissionHash?: string;
+    // ── Blockchain lifecycle fields ──
+    anchorTxHash?: string;   // Trigger 2: anchorSubmission tx hash
+    anchorBlock?: number;    // Trigger 2: block number at anchoring
     createdAt: Date;
     updatedAt: Date;
 }
@@ -127,6 +140,8 @@ export interface IVerification extends Document {
     approvedCredits?: number;
     remarks?: string;
     blockchainVerificationHash?: string;
+    // ── Blockchain lifecycle fields ──
+    approvalTxHash?: string;  // Trigger 3: approveProject tx hash
     finalized: boolean;
     createdAt: Date;
 }

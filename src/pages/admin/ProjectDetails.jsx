@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import StatusBadge from "../../components/shared/StatusBadge";
 import StatCard from "../../components/shared/StatCard";
 import MapComponent from "../../components/shared/MapComponent";
+import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 import { projectsAPI, adminAPI, submissionsAPI, verificationsAPI } from "../../services/api";
 
 /* ── helpers ─────────────────────────────────────────── */
@@ -117,14 +118,55 @@ const ProgressBar = ({ start, end }) => {
 };
 
 /* ── transaction row ─────────────────────────────────── */
-const TxRow = ({ tx }) => (
+const EXPLORER_BASE = import.meta.env.VITE_EXPLORER_URL || 'http://localhost:8545';
+// Detect Sepolia vs local
+const getExplorerTxUrl = (hash) => {
+  if (!hash) return null;
+  // If it looks like Sepolia (infura etc), use Etherscan Sepolia
+  const rpc = import.meta.env.VITE_EXPLORER_URL || '';
+  if (rpc.includes('sepolia') || rpc.includes('11155111')) {
+    return `https://sepolia.etherscan.io/tx/${hash}`;
+  }
+  // Polygon Amoy
+  if (rpc.includes('amoy') || rpc.includes('80002')) {
+    return `https://amoy.polygonscan.com/tx/${hash}`;
+  }
+  // Default: no public explorer for localhost, just return null
+  return null;
+};
+
+const TxRow = ({ tx, onCopy, copiedHash }) => {
+  const explorerUrl = getExplorerTxUrl(tx.hash);
+  return (
   <div style={{
     display: "flex", justifyContent: "space-between", alignItems: "center",
     padding: "10px 0", borderBottom: "1px solid #f3f4f6", fontSize: "12px",
   }}>
     <div>
       <div style={{ fontWeight: 600, color: "#1f2937" }}>{tx.type}</div>
-      <div style={{ fontFamily: "monospace", color: "#9ca3af", fontSize: "11px", marginTop: "2px" }}>{shortAddr(tx.hash)}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+        <span style={{ fontFamily: "monospace", color: "#9ca3af", fontSize: "11px" }}>{shortAddr(tx.hash)}</span>
+        {tx.hash && (
+          <button
+            onClick={() => onCopy(tx.hash)}
+            title="Copy full hash"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 3px", color: copiedHash === tx.hash ? "#10b981" : "#9ca3af", fontSize: "11px" }}
+          >
+            {copiedHash === tx.hash ? "✓" : "⎘"}
+          </button>
+        )}
+        {explorerUrl && (
+          <a
+            href={explorerUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View on block explorer"
+            style={{ fontSize: "10px", color: "#3b82f6", textDecoration: "none", padding: "1px 6px", background: "#eff6ff", borderRadius: "4px", border: "1px solid #bfdbfe" }}
+          >
+            ↗ Explorer
+          </a>
+        )}
+      </div>
     </div>
     <div style={{ textAlign: "right" }}>
       <StatusBadge status={tx.status} />
@@ -132,6 +174,7 @@ const TxRow = ({ tx }) => (
     </div>
   </div>
 );
+};
 
 /* ── remark row ──────────────────────────────────────── */
 const RemarkRow = ({ remark, usersMap }) => {
@@ -176,6 +219,12 @@ const ProjectDetails = () => {
 
   const [submissions, setSubmissions] = useState([]);
   const [verifications, setVerifications] = useState([]);
+  const [onChainEvents, setOnChainEvents] = useState([]);
+  const [onChainLifecycle, setOnChainLifecycle] = useState(null);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsFetched, setEventsFetched] = useState(false);
+  const [eventsError, setEventsError] = useState(null);
+  const [copiedHash, setCopiedHash] = useState(null);
 
   /* ── normalize photos when project changes ── */
   useEffect(() => {
@@ -222,16 +271,44 @@ const ProjectDetails = () => {
       })
       .finally(() => setLoading(false));
 
-    verificationsAPI.getHistory()
+    verificationsAPI.getByProject(id)
       .then(res => setVerifications(res.data.data?.verifications || res.data.data || []))
       .catch(() => {});
   }, [id]);
 
+  /* ── fetch on-chain events (lazy — triggered by button) ── */
+  const fetchOnChainEvents = () => {
+    if (eventsLoading) return;
+    setEventsLoading(true);
+    setEventsError(null);
+    projectsAPI.getOnChainEvents(project?.projectId || id)
+      .then(res => {
+        const d = res.data.data;
+        setOnChainEvents(d.events || []);
+        setOnChainLifecycle(d.lifecycleState || null);
+        setEventsFetched(true);
+      })
+      .catch((err) => {
+        const msg = err?.response?.data?.error?.message || err.message || 'Failed to fetch on-chain events';
+        console.error('Events fetch error:', msg);
+        setEventsError(msg);
+        setEventsFetched(true);
+      })
+      .finally(() => setEventsLoading(false));
+  };
+
+  /* ── copy to clipboard helper ── */
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopiedHash(text);
+    setTimeout(() => setCopiedHash(null), 2000);
+  };
+
   const fetchSubmissions = (projectId) => {
-    submissionsAPI.getMy()
+    submissionsAPI.getByProject(projectId)
       .then(res => {
         const subs = res.data.data.submissions || res.data.data || [];
-        setSubmissions(subs.filter(s => s.projectId === projectId));
+        setSubmissions(subs);
       })
       .catch(() => {});
   };
@@ -256,10 +333,9 @@ const ProjectDetails = () => {
       })
       .catch(() => setMapPins(prev => prev.length > 0 ? prev : fallbackPin));
 
-    submissionsAPI.getMy()
+    submissionsAPI.getByProject(projectId)
       .then(res => {
-        const subs = res.data.data.submissions || res.data.data || [];
-        const projectSubs = subs.filter(s => s.projectId === projectId);
+        const projectSubs = res.data.data.submissions || res.data.data || [];
         const pins = projectSubs
           .filter(s => s.gps?.lat && s.gps?.lng)
           .map(s => ({ lat: s.gps.lat, lng: s.gps.lng, label: `Submission ${s.submissionId || ""} - ${new Date(s.visitDate || s.createdAt).toLocaleDateString()}` }));
@@ -357,16 +433,33 @@ const ProjectDetails = () => {
 
   const transactions = useMemo(() => {
     if (!project) return [];
+    if (project.blockchainTxHistory && project.blockchainTxHistory.length > 0) {
+      return project.blockchainTxHistory.map(tx => {
+        const typeMap = {
+          'PROJECT_REGISTERED': 'Project Registration',
+          'FIELD_OFFICER_ASSIGNED': 'Field Officer Assigned',
+          'VALIDATOR_ASSIGNED': 'Validator Assigned',
+          'SUBMISSION_ANCHORED': 'Submission Anchored',
+          'PROJECT_APPROVED': 'Project Approved',
+          'CREDITS_MINTED': 'Credits Minted'
+        };
+        return {
+          type: typeMap[tx.action] || tx.action,
+          hash: tx.txHash,
+          status: "completed",
+          block: tx.blockNumber || "confirmed"
+        };
+      });
+    }
+    
+    // Legacy fallback
     const txs = [];
-    if (project.blockchainProjectHash) {
-      txs.push({ type: "Project Registration", hash: project.blockchainProjectHash, status: "completed", block: "confirmed" });
+    if (project.blockchainProjectHash || project.onChainTxHash) {
+      txs.push({ type: "Project Registration", hash: project.blockchainProjectHash || project.onChainTxHash, status: "completed", block: project.registeredBlock || "confirmed" });
     }
     submissions.forEach(s => {
-      if (s.ipfsHash) txs.push({ type: "Submission Upload", hash: s.ipfsHash, status: "completed", block: "confirmed" });
+      if (s.anchorTxHash) txs.push({ type: "Submission Anchored", hash: s.anchorTxHash, status: "completed", block: s.anchorBlock || "confirmed" });
     });
-    if (project.mintTxHash) {
-      txs.push({ type: "Credit Minting", hash: project.mintTxHash, status: project.status?.toLowerCase() === "minted" ? "completed" : "pending", block: project.status?.toLowerCase() === "minted" ? "confirmed" : null });
-    }
     return txs;
   }, [project, submissions]);
 
@@ -396,7 +489,9 @@ const ProjectDetails = () => {
     <div style={{ textAlign: "center", padding: "80px 20px" }}>
       <h2 style={{ fontSize: "20px", marginBottom: "8px" }}>Project Not Found</h2>
       <p style={{ color: "#6b7280", marginBottom: "24px" }}>The project you are looking for doesn't exist or has been removed.</p>
-      <button className="primary-btn" onClick={() => navigate("/admin/projects")}>Back to Projects</button>
+      <button className="primary-btn" style={{ display: "inline-flex", alignItems: "center", gap: "6px" }} onClick={() => navigate("/admin/projects")}>
+        <ArrowLeftIcon size={14} /> Back to Projects
+      </button>
     </div>
   );
 
@@ -416,7 +511,9 @@ const ProjectDetails = () => {
             onClick={() => navigate("/admin/projects")}
             className="secondary-btn"
             style={{ width: "36px", height: "36px", padding: 0, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "50%" }}
-          >←</button>
+          >
+            <ArrowLeftIcon size={18} />
+          </button>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <h1 style={{ margin: 0, fontSize: "20px", color: "#0f2a44" }}>{project.projectName}</h1>
@@ -606,13 +703,154 @@ const ProjectDetails = () => {
             extra={<LiveDot color="#0f766e" size={6} />}
           >
             {transactions.length > 0 ? (
-              transactions.map((tx, i) => <TxRow key={i} tx={tx} />)
+              transactions.map((tx, i) => <TxRow key={i} tx={tx} onCopy={copyToClipboard} copiedHash={copiedHash} />)
             ) : (
               <div style={{ textAlign: "center", padding: "20px", color: "#9ca3af", fontSize: "13px" }}>
                 No on-chain transactions recorded
               </div>
             )}
           </Section>
+
+          {/* ── Blockchain Activity Feed ── */}
+          <div className="card" style={{ marginBottom: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <h3 style={{ fontSize: "14px", fontWeight: 600, color: "#0f2a44", margin: 0 }}>
+                🔗 Blockchain Activity
+              </h3>
+              <button
+                onClick={fetchOnChainEvents}
+                disabled={eventsLoading}
+                style={{
+                  fontSize: "11px", fontWeight: 600, padding: "5px 12px", borderRadius: "6px", cursor: eventsLoading ? "not-allowed" : "pointer",
+                  border: "1px solid #d1d5db", background: eventsLoading ? "#f9fafb" : "#fff", color: "#374151",
+                  display: "flex", alignItems: "center", gap: "5px", transition: "all 0.15s",
+                }}
+              >
+                {eventsLoading ? (
+                  <><span style={{ display: "inline-block", animation: "spin 1s linear infinite", fontSize: "12px" }}>⟳</span> Fetching…</>
+                ) : eventsFetched ? "↺ Refresh" : "⬇ Load Events"}
+              </button>
+            </div>
+
+            {/* Lifecycle state pills */}
+            {onChainLifecycle && (
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px", paddingBottom: "12px", borderBottom: "1px solid #f3f4f6" }}>
+                {[
+                  { label: "Registered", val: onChainLifecycle.registered, yes: "#dcfce7", yesText: "#166534", no: "#f3f4f6", noText: "#6b7280" },
+                  { label: "Approved", val: onChainLifecycle.approved, yes: "#dbeafe", yesText: "#1e40af", no: "#f3f4f6", noText: "#6b7280" },
+                  { label: `Minted: ${onChainLifecycle.minted} tCO₂e`, val: onChainLifecycle.minted > 0, yes: "#fdf4ff", yesText: "#7c3aed", no: "#f3f4f6", noText: "#6b7280" },
+                  { label: `Limit: ${onChainLifecycle.limit > 0 ? onChainLifecycle.limit + " tCO₂e" : "Unlimited"}`, val: true, yes: "#fff7ed", yesText: "#c2410c", no: "#fff7ed", noText: "#c2410c" },
+                ].map((pill, i) => (
+                  <span key={i} style={{
+                    padding: "3px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: 600,
+                    background: pill.val ? pill.yes : pill.no,
+                    color: pill.val ? pill.yesText : pill.noText,
+                  }}>
+                    {pill.val && pill.label !== `Limit: ${onChainLifecycle.limit > 0 ? onChainLifecycle.limit + " tCO₂e" : "Unlimited"}` ? "✓ " : ""}{pill.label}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Event feed */}
+            {!eventsFetched ? (
+              <div style={{ textAlign: "center", padding: "20px 0", color: "#9ca3af", fontSize: "13px" }}>
+                Click "Load Events" to query all on-chain events for this project
+              </div>
+            ) : eventsError ? (
+              <div style={{ textAlign: "center", padding: "16px", color: "#991b1b", fontSize: "13px", background: "#fef2f2", borderRadius: "8px", border: "1px solid #fecaca" }}>
+                ⚠ {eventsError}
+              </div>
+            ) : onChainEvents.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px 0", color: "#9ca3af", fontSize: "13px" }}>
+                No on-chain events found for project <span style={{ fontFamily: "monospace" }}>{project.projectId}</span>
+              </div>
+            ) : (
+              <div style={{ maxHeight: "360px", overflowY: "auto", paddingRight: "4px" }}>
+                {onChainEvents.map((ev, i) => {
+                  const EVENT_STYLES = {
+                    ProjectRegistered:   { bg: "#dcfce7", text: "#166534", icon: "📋" },
+                    FieldOfficerAssigned:{ bg: "#ede9fe", text: "#6d28d9", icon: "👷" },
+                    ValidatorAssigned:   { bg: "#e0f2fe", text: "#0c4a6e", icon: "🔍" },
+                    SubmissionAnchored:  { bg: "#dbeafe", text: "#1e40af", icon: "⚓" },
+                    ProjectApproved:     { bg: "#d1fae5", text: "#065f46", icon: "✅" },
+                    CreditsMinted:       { bg: "#fdf4ff", text: "#7c3aed", icon: "🪙" },
+                    MintLimitSet:        { bg: "#fff7ed", text: "#c2410c", icon: "🔐" },
+                    CreditsBurned:       { bg: "#fee2e2", text: "#991b1b", icon: "🔥" },
+                    ProjectStatusUpdated:{ bg: "#f0f9ff", text: "#0369a1", icon: "🔄" },
+                  };
+                  const style = EVENT_STYLES[ev.eventName] || { bg: "#f3f4f6", text: "#374151", icon: "📌" };
+                  const explorerUrl = getExplorerTxUrl(ev.txHash);
+                  const ts = ev.timestamp ? new Date(ev.timestamp * 1000).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : null;
+
+                  return (
+                    <div key={i} style={{
+                      display: "flex", gap: "12px", padding: "10px 0",
+                      borderBottom: i < onChainEvents.length - 1 ? "1px solid #f3f4f6" : "none",
+                    }}>
+                      {/* Icon + vertical connector */}
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: "24px" }}>
+                        <div style={{
+                          width: "24px", height: "24px", borderRadius: "50%", flexShrink: 0,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          background: style.bg, fontSize: "12px",
+                        }}>{style.icon}</div>
+                        {i < onChainEvents.length - 1 && (
+                          <div style={{ width: "1px", flex: 1, minHeight: "8px", background: "#e5e7eb", marginTop: "3px" }} />
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "4px", alignItems: "flex-start" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{
+                              padding: "2px 8px", borderRadius: "10px", fontSize: "10px", fontWeight: 700,
+                              background: style.bg, color: style.text, whiteSpace: "nowrap",
+                            }}>{ev.eventName}</span>
+                            <span style={{ fontSize: "10px", color: "#9ca3af" }}>Block #{ev.blockNumber}</span>
+                          </div>
+                          {ts && <span style={{ fontSize: "10px", color: "#9ca3af", whiteSpace: "nowrap" }}>{ts}</span>}
+                        </div>
+
+                        {/* Tx hash row */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "4px" }}>
+                          <span style={{ fontFamily: "monospace", fontSize: "11px", color: "#6b7280" }}>{shortAddr(ev.txHash)}</span>
+                          <button
+                            onClick={() => copyToClipboard(ev.txHash)}
+                            title="Copy full tx hash"
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0 2px", color: copiedHash === ev.txHash ? "#10b981" : "#9ca3af", fontSize: "11px" }}
+                          >
+                            {copiedHash === ev.txHash ? "✓" : "⎘"}
+                          </button>
+                          {explorerUrl && (
+                            <a href={explorerUrl} target="_blank" rel="noopener noreferrer"
+                              style={{ fontSize: "10px", color: "#3b82f6", textDecoration: "none", padding: "1px 6px", background: "#eff6ff", borderRadius: "4px", border: "1px solid #bfdbfe" }}
+                            >↗ Explorer</a>
+                          )}
+                        </div>
+
+                        {/* Key args (excluding projectId itself) */}
+                        <div style={{ marginTop: "4px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                          {Object.entries(ev.args)
+                            .filter(([k]) => !['projectId', 'timestamp'].includes(k))
+                            .slice(0, 4)
+                            .map(([k, v]) => (
+                              <span key={k} style={{ fontSize: "10px", background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: "4px", padding: "1px 6px", color: "#374151", maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                <span style={{ color: "#9ca3af" }}>{k}: </span>
+                                {typeof v === 'string' && v.startsWith('0x') && v.length > 12 ? shortAddr(v) : String(v)}
+                              </span>
+                            ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
+          </div>
         </div>
       </div>
 

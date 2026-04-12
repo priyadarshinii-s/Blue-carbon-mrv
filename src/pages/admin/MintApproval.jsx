@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import Timeline from "../../components/shared/Timeline";
 import CalculationPreview from "../../components/shared/CalculationPreview";
 import ReviewWizard from "../../components/shared/ReviewWizard";
-import TransactionModal from "../../components/common/TransactionModal";
 import ConfirmRejectModal from "../../components/common/ConfirmRejectModal";
+import TxSuccessScreen from "../../components/shared/TxSuccessScreen";
+import LoadingSpinner from "../../components/shared/LoadingSpinner";
+import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 import { adminAPI } from "../../services/api";
 
 const wizardSteps = [
@@ -12,11 +14,14 @@ const wizardSteps = [
   { label: "Decision" },
 ];
 
+const shortAddr = (a) => a ? `${a.slice(0, 6)}...${a.slice(-4)}` : "–";
+
 const MintApproval = () => {
   const [mintQueue, setMintQueue] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [txModal, setTxModal] = useState({ open: false, status: "pending", txHash: "", blockNumber: null });
+  const [submitting, setSubmitting] = useState(false);
+  const [txResult, setTxResult] = useState(null); // { status: "success"|"error", txHash, message }
   const [rejectReason, setRejectReason] = useState("");
   const [rejectError, setRejectError] = useState("");
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -52,7 +57,7 @@ const MintApproval = () => {
   }, []);
 
   const handleMint = async () => {
-    setTxModal({ open: true, status: "pending", txHash: "", blockNumber: null });
+    setSubmitting(true);
     setMintError("");
     try {
       const res = await adminAPI.mint(selectedItem.projectId, {
@@ -62,20 +67,25 @@ const MintApproval = () => {
 
       const data = res.data?.data;
       const txHash = data?.txHash || "";
-      const blockNumber = data?.blockNumber || null;
       const onChainStatus = data?.onChainStatus || "confirmed";
 
-      setTxModal({
-        open: true,
+      setTxResult({
         status: onChainStatus === "confirmed" || onChainStatus === "pending" ? "success" : "error",
         txHash,
-        blockNumber,
+        message: onChainStatus === "confirmed" || onChainStatus === "pending" 
+            ? "Carbon credits have been minted successfully on the blockchain."
+            : "The on-chain transaction failed.",
       });
       setMintQueue(prev => prev.filter(q => q.id !== selectedItem.id));
     } catch (err) {
       const errorMsg = err?.response?.data?.error?.message || "Transaction failed. Please try again.";
-      setMintError(errorMsg);
-      setTxModal({ open: true, status: "error", txHash: "", blockNumber: null });
+      setTxResult({
+        status: "error",
+        txHash: "",
+        message: errorMsg,
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -112,6 +122,31 @@ const MintApproval = () => {
 
   if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Loading mint queue…</div>;
 
+  if (submitting) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "20px" }}>
+        <LoadingSpinner size={64} />
+        <h2 style={{ fontSize: "20px", color: "#0f2a44" }}>Minting Carbon Credits...</h2>
+        <p style={{ color: "#6b7280", fontSize: "14px" }}>Signing transaction and recording on Polygon Amoy blockchain</p>
+      </div>
+    );
+  }
+
+  if (txResult) {
+    const isError = txResult.status === "error";
+    return (
+      <TxSuccessScreen
+        title={isError ? "Minting Failed" : "Credits Minted Successfully!"}
+        message={txResult.message}
+        txHash={txResult.txHash}
+        isError={isError}
+        actionButtons={[
+          { label: <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><ArrowLeftIcon size={14} /> Back to Mint Queue</span>, onClick: () => { setTxResult(null); setSelectedItem(null); }, primary: true }
+        ]}
+      />
+    );
+  }
+
   return (
     <>
       <h1 style={{ paddingBottom: "0px", paddingTop: "5px" }}>Mint Approval Queue</h1>
@@ -123,21 +158,34 @@ const MintApproval = () => {
             <p style={{ color: "#6b7280" }}>All verified submissions have been processed.</p>
           </div>
         ) : (
-          <table className="table" style={{ marginTop: "12px" }}>
-            <thead>
+          <div style={{ overflowX: "auto", paddingBottom: "10px", margin: "10px 0" }}>
+            <table className="table" style={{ marginTop: "12px", minWidth: "900px" }}>
+              <thead>
               <tr>
-                <th>Project</th><th>Field Officer</th><th>Validator</th><th>Total Credits</th><th>Already Minted</th><th>Mintable (tCO₂e)</th><th>Verified Date</th><th>Chain</th><th>Action</th>
+                <th style={{ textAlign: "left" }}>Project</th>
+                <th style={{ textAlign: "left" }}>Field Officer</th>
+                <th style={{ textAlign: "left" }}>Validator</th>
+                <th style={{ textAlign: "center" }}>Total Credits</th>
+                <th style={{ textAlign: "center" }}>Already Minted</th>
+                <th style={{ textAlign: "center" }}>Mintable (tCO₂e)</th>
+                <th style={{ textAlign: "center" }}>Verified Date</th>
+                <th style={{ textAlign: "center" }}>Chain</th>
+                <th style={{ textAlign: "center" }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {mintQueue.map((item) => (
                 <tr key={item.id}>
-                  <td style={{ fontWeight: 500 }}>{item.project}</td>
-                  <td>{item.fieldOfficer}</td>
-                  <td>{item.validator}</td>
-                  <td>{item.trees}</td>
-                  <td>{item.totalMinted}</td>
-                  <td>
+                  <td style={{ fontWeight: 500, textAlign: "left" }}>{item.project}</td>
+                  <td style={{ textAlign: "left", fontFamily: "monospace", fontSize: "13px" }}>
+                    {item.fieldOfficer.length > 20 ? shortAddr(item.fieldOfficer) : item.fieldOfficer}
+                  </td>
+                  <td style={{ textAlign: "left", fontFamily: "monospace", fontSize: "13px" }}>
+                    {item.validator.length > 20 ? shortAddr(item.validator) : item.validator}
+                  </td>
+                  <td style={{ textAlign: "center" }}>{item.trees}</td>
+                  <td style={{ textAlign: "center" }}>{item.totalMinted}</td>
+                  <td style={{ textAlign: "center" }}>
                     <span style={{
                       background: "#ecfdf5", color: "#065f46", fontWeight: 600,
                       padding: "2px 8px", borderRadius: "10px", fontSize: "13px"
@@ -145,8 +193,8 @@ const MintApproval = () => {
                       {item.co2}
                     </span>
                   </td>
-                  <td>{item.verifiedDate}</td>
-                  <td>
+                  <td style={{ textAlign: "center" }}>{item.verifiedDate}</td>
+                  <td style={{ textAlign: "center" }}>
                     {item.onChainEnabled ? (
                       <span style={{
                         background: "#dbeafe", color: "#1e40af", fontSize: "11px",
@@ -159,7 +207,7 @@ const MintApproval = () => {
                       }}>Off-Chain</span>
                     )}
                   </td>
-                  <td>
+                  <td style={{ textAlign: "center" }}>
                     <button
                       className="primary-btn"
                       style={{ fontSize: "12px", padding: "6px 12px" }}
@@ -172,6 +220,7 @@ const MintApproval = () => {
               ))}
             </tbody>
           </table>
+          </div>
         )
       ) : (
         <>
@@ -258,14 +307,6 @@ const MintApproval = () => {
             onClose={() => setRejectModalOpen(false)} onConfirm={confirmReject} />
         </>
       )}
-
-      <TransactionModal
-        isOpen={txModal.open}
-        onClose={() => { setTxModal({ open: false, status: "pending", txHash: "", blockNumber: null }); setSelectedItem(null); }}
-        status={txModal.status}
-        txHash={txModal.txHash}
-        blockNumber={txModal.blockNumber}
-      />
     </>
   );
 };

@@ -47,12 +47,14 @@ export const projectsAPI = {
     getById: (id) => api.get(`/projects/${id}`),
     create: (data) => api.post("/projects", data),
     update: (id, data) => api.patch(`/projects/${id}`, data),
+    getOnChainEvents: (id) => api.get(`/projects/${id}/on-chain-events`),
 };
 
 export const submissionsAPI = {
     create: (data) => api.post("/submissions", data),
     getMy: () => api.get("/submissions/my"),
     getById: (id) => api.get(`/submissions/${id}`),
+    getByProject: (projectId) => api.get(`/submissions/project/${projectId}`),
 };
 
 export const verificationsAPI = {
@@ -60,6 +62,7 @@ export const verificationsAPI = {
     review: (submissionId, data) =>
         api.post(`/verifications/${submissionId}/review`, data),
     getHistory: () => api.get("/verifications/history"),
+    getByProject: (projectId) => api.get(`/verifications/project/${projectId}`),
 };
 
 export const adminAPI = {

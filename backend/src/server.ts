@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
 import dotenv from 'dotenv';
 
@@ -18,7 +17,7 @@ import adminRoutes from './routes/admin.routes';
 import reportRoutes from './routes/report.routes';
 import settingsRoutes from './routes/settings.routes';
 import uploadRoutes from './routes/upload.routes';
-import { startBlockchainListener } from './services/blockchain.listener';
+import { startBlockchainListener, stopBlockchainListener } from './services/blockchain.listener';
 import { blockchainHealthCheck, isBlockchainConfigured } from './services/blockchain.service';
 
 dotenv.config();
@@ -42,29 +41,6 @@ app.use(
         ],
     })
 );
-
-const generalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: process.env.NODE_ENV === 'development' ? 10000 : 100,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {
-        success: false,
-        error: {
-            code: 'TOO_MANY_REQUESTS',
-            message: 'Too many requests, please try again later.',
-        },
-    },
-});
-app.use('/api/', generalLimiter);
-
-const submissionLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { success: false, error: { code: 'TOO_MANY_REQUESTS', message: 'Submission rate limit exceeded. Max 10 per minute.' } },
-});
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -95,7 +71,7 @@ app.get('/api/health', async (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
-app.use('/api/submissions', submissionLimiter, submissionRoutes);
+app.use('/api/submissions', submissionRoutes);
 app.use('/api/verifications', verificationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reports', reportRoutes);
@@ -136,6 +112,20 @@ process.on('uncaughtException', (error: Error) => {
     logger.fatal({ err: error }, 'UNCAUGHT EXCEPTION — shutting down');
     process.exit(1);
 });
+
+// ── Graceful shutdown — stop blockchain listener before exit ──
+async function gracefulShutdown(signal: string): Promise<void> {
+    logger.info(`${signal} received — shutting down gracefully`);
+    try {
+        await stopBlockchainListener();
+    } catch (err) {
+        logger.error({ err }, 'Error stopping blockchain listener during shutdown');
+    }
+    process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 startServer();
 

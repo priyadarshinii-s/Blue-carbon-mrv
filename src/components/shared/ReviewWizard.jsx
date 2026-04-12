@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ArrowLeftIcon from "../common/ArrowLeftIcon";
 
 const ReviewWizard = ({ steps = [], children, onBack, stepGates = [] }) => {
     const [current, setCurrent] = useState(0);
@@ -21,7 +22,8 @@ const ReviewWizard = ({ steps = [], children, onBack, stepGates = [] }) => {
                         onMouseOver={(e) => (e.currentTarget.style.color = "var(--text)")}
                         onMouseOut={(e) => (e.currentTarget.style.color = "var(--text-muted)")}
                     >
-                        ← Back to Queue
+                        <ArrowLeftIcon size={14} />
+                        Back to Queue
                     </button>
                 </div>
             )}
@@ -68,7 +70,9 @@ const ReviewWizard = ({ steps = [], children, onBack, stepGates = [] }) => {
                         style={{ padding: "10px 24px", fontSize: "13px" }}
                         onClick={() => setCurrent(current - 1)}
                     >
-                        ← Previous
+                        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <ArrowLeftIcon size={14} /> Previous
+                        </span>
                     </button>
                 ) : (
                     <div />

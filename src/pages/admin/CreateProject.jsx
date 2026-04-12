@@ -8,6 +8,8 @@ import DraftRecoveryBanner from "../../components/shared/DraftRecoveryBanner";
 import { adminAPI, projectsAPI, uploadAPI } from "../../services/api";
 import ConfirmationTxModal from "../../components/shared/ConfirmationTxModal";
 import ProjectSuccessScreen from "../../components/shared/ProjectSuccessScreen";
+import LoadingSpinner from "../../components/shared/LoadingSpinner";
+import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 
 const DRAFT_KEY = "admin_project_draft";
 const STEPS = ["Basic Details", "Location", "Evidence", "Timeline", "Admin Settings"];
@@ -22,7 +24,7 @@ const emptyForm = {
   name: "", ecosystemType: "", description: "", organization: "NCCR National Office",
   location: "", lat: "", lng: "", area: "",
   photos: [], videos: [],
-  startDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+  startDate: "",
   endDate: "", activities: [], notes: "",
   assignedOfficers: [], assignedValidators: [],
   projectCode: "", baselineCarbon: "", fundingSource: "", partnerOrgs: "",
@@ -268,7 +270,7 @@ const CreateProject = () => {
       localStorage.removeItem(DRAFT_KEY);
       setSuccess({
         id: project.projectId,
-        tx: project.blockchainProjectHash || "Pending",
+        tx: project.onChainTxHash || project.blockchainProjectHash || "Pending",
         name: project.projectName,
       });
     } catch (err) {
@@ -287,7 +289,7 @@ const CreateProject = () => {
   if (submitting) {
     return (
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "60vh", gap: "20px" }}>
-        <div style={{ fontSize: "64px", animation: "spin 1.5s linear infinite" }}>🍃</div>
+        <LoadingSpinner size={64} />
         <h2 style={{ fontSize: "20px", color: "#0f2a44" }}>Registering on Polygon...</h2>
         <p style={{ color: "#6b7280", fontSize: "14px" }}>Signing transaction and writing metadata to chain</p>
       </div>
@@ -560,9 +562,10 @@ const CreateProject = () => {
           <button
             type="button"
             className="secondary-btn"
+            style={{ display: "flex", alignItems: "center", gap: "6px" }}
             onClick={step === 0 ? () => navigate("/admin/projects") : handleBack}
           >
-            {step === 0 ? "Cancel" : "Back"}
+            {step > 0 && <ArrowLeftIcon size={14} />} {step === 0 ? "Cancel" : "Back"}
           </button>
           <div style={{ display: "flex", gap: "10px" }}>
             {step < STEPS.length - 1 ? (

@@ -7,6 +7,7 @@ import PhotoUploader from "../../components/shared/PhotoUploader";
 import DraftRecoveryBanner from "../../components/shared/DraftRecoveryBanner";
 import ConfirmationTxModal from "../../components/shared/ConfirmationTxModal";
 import ProjectSuccessScreen from "../../components/shared/ProjectSuccessScreen";
+import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 import { projectsAPI, uploadAPI } from "../../services/api";
 
 const DRAFT_KEY = "user_project_draft";
@@ -22,7 +23,7 @@ const emptyForm = {
     name: "", ecosystemType: "", description: "", organization: "",
     location: "", lat: "", lng: "", area: "",
     photos: [], videos: [],
-    startDate: new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+    startDate: "",
     endDate: "", activities: [], notes: "",
 };
 
@@ -239,7 +240,7 @@ const UserCreateProject = () => {
             localStorage.removeItem(DRAFT_KEY);
             setSuccess({
                 id: project.projectId || project._id,
-                tx: project.blockchainProjectHash || "0x" + Math.random().toString(16).slice(2, 42),
+                tx: project.onChainTxHash || project.blockchainProjectHash || null,
                 name: form.name,
             });
         } catch (err) {
@@ -418,8 +419,8 @@ const UserCreateProject = () => {
                 )}
 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "28px", paddingTop: "20px", borderTop: "1px solid var(--border)" }}>
-                    <button type="button" className="secondary-btn" onClick={step === 0 ? () => navigate("/user/projects") : handleBack}>
-                        {step === 0 ? "Cancel" : "Back"}
+                    <button type="button" className="secondary-btn" style={{ display: "flex", alignItems: "center", gap: "6px" }} onClick={step === 0 ? () => navigate("/user/projects") : handleBack}>
+                        {step > 0 && <ArrowLeftIcon size={14} />} {step === 0 ? "Cancel" : "Back"}
                     </button>
                     {step < STEPS.length - 1 ? (
                         <button type="button" className="primary-btn" onClick={handleNext} style={{ padding: "10px 28px" }}>Continue</button>

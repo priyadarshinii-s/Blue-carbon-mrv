@@ -8,9 +8,13 @@ const LocationMapWithDraw = ({ onLocationChange }) => {
     const [searching, setSearching] = useState(false);
     const [gpsLoading, setGpsLoading] = useState(false);
     const debounceRef = useRef(null);
-
+    const ignoreSearchRef = useRef(false);
 
     useEffect(() => {
+        if (ignoreSearchRef.current) {
+            ignoreSearchRef.current = false;
+            return;
+        }
         if (search.length < 3) { setSuggestions([]); return; }
         clearTimeout(debounceRef.current);
         debounceRef.current = setTimeout(async () => {
@@ -37,6 +41,7 @@ const LocationMapWithDraw = ({ onLocationChange }) => {
     const selectSuggestion = (s) => {
         setPin({ lat: s.lat, lng: s.lng });
         const locationName = s.district ? `${s.district}, ${s.state}` : s.state || s.display;
+        ignoreSearchRef.current = true;
         setSearch(locationName);
         setSuggestions([]);
         if (onLocationChange) onLocationChange({ lat: s.lat, lng: s.lng, name: locationName });
@@ -59,6 +64,7 @@ const LocationMapWithDraw = ({ onLocationChange }) => {
                 const district = d.address?.state_district || d.address?.county || "";
                 const locationName = district ? `${district}, ${state}` : state || d.display_name;
                 setPin({ lat, lng });
+                ignoreSearchRef.current = true;
                 setSearch(locationName);
                 if (onLocationChange) onLocationChange({ lat, lng, name: locationName });
             }
@@ -84,9 +90,11 @@ const LocationMapWithDraw = ({ onLocationChange }) => {
                         const state = data.address?.state || "";
                         const district = data.address?.state_district || data.address?.county || "";
                         const locationName = district ? `${district}, ${state}` : state || `${lat}, ${lng}`;
+                        ignoreSearchRef.current = true;
                         setSearch(locationName);
                         if (onLocationChange) onLocationChange({ lat, lng, name: locationName });
                     } catch {
+                        ignoreSearchRef.current = true;
                         setSearch(`${lat}, ${lng}`);
                         if (onLocationChange) onLocationChange({ lat, lng, name: `${lat}, ${lng}` });
                     }
@@ -147,7 +155,7 @@ const LocationMapWithDraw = ({ onLocationChange }) => {
                         </div>
                     )}
                 </div>
-                <button type="button" className="secondary-btn" onClick={handleSearch} disabled={searching} style={{ whiteSpace: "nowrap" }}>
+                <button type="button" className="secondary-btn" onClick={() => { ignoreSearchRef.current = true; handleSearch(); }} disabled={searching} style={{ whiteSpace: "nowrap" }}>
                     {searching ? "Searching..." : "🔍 Search"}
                 </button>
                 <button type="button" className="primary-btn" onClick={handleUseCurrentLocation} disabled={gpsLoading} style={{ whiteSpace: "nowrap" }}>

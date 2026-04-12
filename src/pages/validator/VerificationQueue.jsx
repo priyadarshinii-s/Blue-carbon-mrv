@@ -4,7 +4,9 @@ import MapComponent from "../../components/shared/MapComponent";
 import CarbonCalculationForm from "../../components/shared/CarbonCalculationForm";
 import Timeline from "../../components/shared/Timeline";
 import ReviewWizard from "../../components/shared/ReviewWizard";
+import TxSuccessScreen from "../../components/shared/TxSuccessScreen";
 import ConfirmRejectModal from "../../components/common/ConfirmRejectModal";
+import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
 import { verificationsAPI, projectsAPI, adminAPI } from "../../services/api";
 
 
@@ -117,17 +119,18 @@ const VerificationQueue = () => {
     const statusMap = { approved: "Approved", rejected: "Rejected", correction: "NeedsCorrection" };
 
     try {
-      await verificationsAPI.review(selected.submissionId, {
+      const res = await verificationsAPI.review(selected.submissionId, {
         status: statusMap[decision] || decision,
         remarks: comment,
         approvedCredits: decision === "approved" ? calculatedCredits : 0,
       });
+      // Capture actual txHash from blockchain execution
+      setTxHash(res.data?.data?.verification?.approvalTxHash || "");
     } catch {
       /* ignore */
     }
 
     setQueue((prev) => prev.filter((q) => q.id !== selected.id));
-    setTxHash(`0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2, 10)}`);
     setVerdict(decision);
     setSaving(false);
   };
@@ -154,32 +157,27 @@ const VerificationQueue = () => {
   if (loading) return <div style={{ padding: "40px", textAlign: "center", color: "#6b7280" }}>Loading queue…</div>;
 
   if (verdict) {
+    const isApproved = verdict === "approved";
+    const isRejected = verdict === "rejected";
+    
+    let message = "";
+    if (isApproved) {
+      message = "The submission has been verified and the project has been approved on Polygon. It is now in the mint queue.";
+    } else if (isRejected) {
+      message = "The field officer has been notified of the rejection.";
+    } else {
+      message = "The field officer has been notified to make corrections.";
+    }
+
     return (
-      <div style={{ textAlign: "center", padding: "60px 20px" }}>
-        <h2 style={{ fontSize: "22px", marginTop: "16px" }}>
-          {verdict === "approved" ? "Submission Approved" : verdict === "rejected" ? "Submission Rejected" : "Correction Requested"}
-        </h2>
-        <p style={{ color: "#6b7280", marginTop: "8px" }}>
-          {verdict === "approved"
-            ? "The submission has been moved to the admin mint queue."
-            : verdict === "rejected"
-              ? "The field officer has been notified of the rejection."
-              : "The field officer has been notified to make corrections."}
-        </p>
-        {verdict === "approved" && (
-          <div className="card mt-20" style={{ display: "inline-block", textAlign: "left", minWidth: "300px" }}>
-            <div style={{ fontSize: "13px", color: "#6b7280", marginBottom: "4px" }}>Verification Tx Hash</div>
-            <div style={{ fontSize: "12px", fontFamily: "monospace", wordBreak: "break-all", color: "#0f766e" }}>
-              {txHash}
-            </div>
-          </div>
-        )}
-        <div className="action-btns mt-20">
-          <button className="primary-btn" onClick={resetReview}>
-            Back to Queue
-          </button>
-        </div>
-      </div>
+      <TxSuccessScreen
+        title={isApproved ? "Submission Approved" : isRejected ? "Submission Rejected" : "Correction Requested"}
+        message={message}
+        txHash={isApproved ? txHash : undefined}
+        actionButtons={[
+          { label: <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><ArrowLeftIcon size={14} /> Back to Queue</span>, onClick: resetReview, primary: true }
+        ]}
+      />
     );
   }
 

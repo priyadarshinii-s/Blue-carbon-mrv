@@ -42,6 +42,12 @@ const verificationSchema = new Schema<IVerification>(
             maxlength: [2000, 'Remarks cannot exceed 2000 characters'],
         },
         blockchainVerificationHash: { type: String },
+        // ── Blockchain lifecycle fields ──
+        approvalTxHash: {
+            type: String,
+            // Set after approveProject() tx is confirmed (Trigger 3)
+            // Used as idempotency guard: skip re-approval if already set
+        },
         finalized: {
             type: Boolean,
             default: false,

@@ -35,36 +35,28 @@ const ProjectSuccessScreen = ({ projectId, projectName, txHash, isAdmin }) => {
                 <span style={{ fontFamily: "monospace", fontWeight: 800, color: "#065f46", fontSize: "13px" }}>{projectId}</span>
             </div>
 
-            {txHash && (
+            {txHash && txHash.startsWith("0x") && (
                 <div style={{
                     background: "#f9fafb", border: "1px solid #e5e7eb",
                     borderRadius: "8px", padding: "10px 18px", marginBottom: "28px",
                     fontSize: "12px", color: "#6b7280", fontFamily: "monospace",
                 }}>
-                    Tx: {txHash}
+                    Tx: {txHash.length > 20 ? `${txHash.slice(0, 10)}...${txHash.slice(-8)}` : txHash}
                 </div>
             )}
 
-            <div style={{
-                width: "120px", height: "120px", background: "#f9fafb",
-                border: "2px dashed #d1d5db", borderRadius: "8px",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                marginBottom: "28px", flexDirection: "column", gap: "6px",
-            }}>
-                <span style={{ fontSize: "32px" }}>▦</span>
-                <span style={{ fontSize: "10px", color: "#9ca3af" }}>QR Code</span>
-            </div>
-
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
-                <a
-                    href={`https://mumbai.polygonscan.com/tx/${txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="secondary-btn"
-                    style={{ fontSize: "14px", padding: "10px 20px" }}
-                >
-                    View on PolygonScan
-                </a>
+                {txHash && txHash.startsWith("0x") && (
+                    <a
+                        href={`https://amoy.polygonscan.com/tx/${txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="secondary-btn"
+                        style={{ fontSize: "14px", padding: "10px 20px" }}
+                    >
+                        View on PolygonScan
+                    </a>
+                )}
                 <button
                     className="primary-btn"
                     style={{ fontSize: "14px", padding: "10px 20px" }}

@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PhotoUploader from "../../components/shared/PhotoUploader";
 import MapComponent from "../../components/shared/MapComponent";
-import { submissionsAPI, projectsAPI, uploadAPI } from "../../services/api";
+import DraftRecoveryBanner from "../../components/shared/DraftRecoveryBanner";
+import TxSuccessScreen from "../../components/shared/TxSuccessScreen";
+import ArrowLeftIcon from "../../components/common/ArrowLeftIcon";
+import { projectsAPI, submissionsAPI, uploadAPI } from "../../services/api";
 
 const TYPE_CONFIG = {
   MANGROVE: {
@@ -234,8 +237,8 @@ const NewSubmission = () => {
       };
 
       console.log("Submitting field data:", payload);
-      await submissionsAPI.create(payload);
-      setSubmitted(true);
+      const res = await submissionsAPI.create(payload);
+      setSubmitted(res.data.data.submission);
     } catch (err) {
       console.error("Submission failed:", err);
       const msg = err.response?.data?.error?.message || err.message || "Submission failed. Please try again.";
@@ -247,22 +250,15 @@ const NewSubmission = () => {
 
   if (submitted) {
     return (
-      <div style={{ textAlign: "center", padding: "60px 20px", background: "white", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", margin: "40px auto", maxWidth: "600px" }}>
-        <h2 style={{ fontSize: "22px", marginTop: "16px", color: "#0f766e" }}>
-          Submission Successful
-        </h2>
-        <p style={{ color: "#6b7280", marginTop: "8px", fontSize: "15px" }}>
-          Your field data has been successfully submitted and is currently pending verification.
-        </p>
-        <div className="action-btns mt-20" style={{ display: "flex", justifyContent: "center", gap: "12px", marginTop: "30px" }}>
-          <button className="primary-btn" onClick={() => navigate("/field/history")} style={{ padding: "10px 24px" }}>
-            View History
-          </button>
-          <button className="secondary-btn" onClick={() => navigate("/field")} style={{ padding: "10px 24px" }}>
-            Back to Dashboard
-          </button>
-        </div>
-      </div>
+      <TxSuccessScreen
+        title="Submission Successful"
+        message="Your field data has been successfully submitted and is currently pending verification."
+        txHash={submitted.anchorTxHash}
+        actionButtons={[
+          { label: "View History", onClick: () => navigate("/field/history"), primary: true },
+          { label: <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><ArrowLeftIcon size={14} /> Back to Dashboard</span>, onClick: () => navigate("/field"), primary: false }
+        ]}
+      />
     );
   }
 

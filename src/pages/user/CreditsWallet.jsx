@@ -60,7 +60,7 @@ const CreditsWallet = () => {
                     <p style={{ fontSize: "13px", fontFamily: "monospace", margin: 0 }}>{user?.walletAddress || "Not connected"}</p>
                 </div>
                 {user?.walletAddress && (
-                    <a href={`https://mumbai.polygonscan.com/address/${user.walletAddress}`} target="_blank" rel="noopener noreferrer" className="secondary-btn" style={{ fontSize: "12px" }}>
+                    <a href={`https://amoy.polygonscan.com/address/${user.walletAddress}`} target="_blank" rel="noopener noreferrer" className="secondary-btn" style={{ fontSize: "12px" }}>
                         View on Explorer ↗
                     </a>
                 )}
@@ -89,7 +89,7 @@ const CreditsWallet = () => {
                                 <td>{new Date(c.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</td>
                                 <td>
                                     {c.txHash ? (
-                                        <a href={`https://mumbai.polygonscan.com/tx/${c.txHash}`} target="_blank" rel="noopener noreferrer"
+                                        <a href={`https://amoy.polygonscan.com/tx/${c.txHash}`} target="_blank" rel="noopener noreferrer"
                                             style={{ fontSize: "11px", fontFamily: "monospace", color: "#0f766e" }}>
                                             {c.txHash.slice(0, 10)}...{c.txHash.slice(-6)}
                                         </a>

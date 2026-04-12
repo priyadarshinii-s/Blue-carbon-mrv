@@ -1,3 +1,5 @@
+import LoadingSpinner from "../shared/LoadingSpinner";
+
 const TransactionModal = ({ isOpen, onClose, status = "pending", txHash = "", blockNumber = null, title = "Blockchain Transaction" }) => {
     if (!isOpen) return null;
 
@@ -10,8 +12,8 @@ const TransactionModal = ({ isOpen, onClose, status = "pending", txHash = "", bl
                 <h2 style={{ fontSize: "17px", marginBottom: "20px" }}>{title}</h2>
 
                 {status === "pending" && (
-                    <div>
-                        <div style={{ fontSize: "40px", marginBottom: "16px" }}>⏳</div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                        <div style={{ marginBottom: "16px" }}><LoadingSpinner size={40} /></div>
                         <p style={{ fontSize: "14px", fontWeight: 600 }}>Broadcasting transaction...</p>
                         <p style={{ fontSize: "13px", color: "#6b7280", marginTop: "8px" }}>
                             Please do not close this window. Waiting for blockchain confirmation.

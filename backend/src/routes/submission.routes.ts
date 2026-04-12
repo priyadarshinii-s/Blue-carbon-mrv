@@ -3,6 +3,7 @@ import {
     createSubmission,
     getMySubmissions,
     getSubmission,
+    getProjectSubmissions,
 } from '../controllers/submission.controller';
 import { protect } from '../middlewares/auth';
 import { restrictTo } from '../middlewares/roleGuard';
@@ -22,6 +23,8 @@ router.post(
 );
 
 router.get('/my', restrictTo(UserRole.FIELD_OFFICER), getMySubmissions);
+
+router.get('/project/:projectId', getProjectSubmissions);
 
 router.get('/:id', getSubmission);
 

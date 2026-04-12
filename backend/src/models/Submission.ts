@@ -60,6 +60,15 @@ const submissionSchema = new Schema<ISubmission>(
         },
         validatorComments: { type: String, trim: true },
         blockchainSubmissionHash: { type: String },
+        // ── Blockchain lifecycle fields ──
+        anchorTxHash: {
+            type: String,
+            // Set after anchorSubmission() tx is confirmed (Trigger 2)
+            // Used as idempotency guard: skip re-anchoring if already set
+        },
+        anchorBlock: {
+            type: Number,
+        },
     },
     {
         timestamps: true,
