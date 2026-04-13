@@ -32,7 +32,7 @@ const config: HardhatUserConfig = {
         },
     },
     etherscan: {
-        apiKey: process.env.ETHERSCAN_API_KEY || "",
+        apiKey: "RUSM1TT386YS5A5CVSSM4NRGMGC6EVDGM6"
     },
     paths: {
         sources: "./contracts",
