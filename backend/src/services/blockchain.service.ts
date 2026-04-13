@@ -29,46 +29,25 @@ interface BlockchainConfig {
 }
 
 function getEnvConfig(): BlockchainConfig {
-    const rpcUrl         = process.env.RPC_URL;
-    const privateKey     = process.env.PRIVATE_KEY;
+    const rpcUrl = process.env.RPC_URL;
+    const privateKey = process.env.PRIVATE_KEY;
     const contractAddress = process.env.CONTRACT_ADDRESS;
 
-    if (!rpcUrl)          throw new Error('RPC_URL environment variable is not set');
-    if (!privateKey)      throw new Error('PRIVATE_KEY environment variable is not set');
-    if (!contractAddress) throw new Error('CONTRACT_ADDRESS environment variable is not set');
+    if (!rpcUrl)           throw new Error('RPC_URL environment variable is not set');
+    if (!privateKey)       throw new Error('PRIVATE_KEY environment variable is not set');
+    if (!contractAddress)  throw new Error('CONTRACT_ADDRESS environment variable is not set');
 
     return { rpcUrl, privateKey, contractAddress };
 }
-
-// ──────────────────── Singleton Instances ────────────────────
 
 let _provider: ethers.JsonRpcProvider | null = null;
 let _signer: ethers.Signer | null = null;
 let _contract: ethers.Contract | null = null;
 
-/**
- * Returns a JsonRpcProvider configured to avoid stateful server-side filters.
- *
- * Root cause of "resource not found" / eth_getFilterChanges errors:
- *   ethers JsonRpcProvider normally creates a server-side filter via eth_newFilter
- *   and polls it with eth_getFilterChanges.  Managed RPC nodes (Alchemy, QuickNode,
- *   Render, etc.) expire these filters after ~2–5 min — the filter ID is then gone
- *   and the node returns -32001.
- *
- * Fix: set polling interval to 0 to disable the internal poller entirely.
- *   We never use on-chain event subscriptions in this service — all event queries
- *   go through queryFilter() (eth_getLogs) which is stateless.  So disabling the
- *   poller has zero functional impact and eliminates the error completely.
- */
 function getProvider(): ethers.JsonRpcProvider {
     if (!_provider) {
         const { rpcUrl } = getEnvConfig();
         _provider = new ethers.JsonRpcProvider(rpcUrl);
-
-        // Disable the automatic block poller — prevents eth_newFilter /
-        // eth_getFilterChanges calls that expire on managed RPC nodes.
-        // All our reads use eth_getLogs (queryFilter) which is stateless.
-        _provider.polling = false;
     }
     return _provider;
 }
@@ -118,11 +97,6 @@ async function fetchGasFees(): Promise<{ maxFeePerGas: bigint; maxPriorityFeePer
 
 const CONFIRMATION_BLOCKS = parseInt(process.env.CONFIRMATION_BLOCKS || '1', 10);
 
-/**
- * Waits for a transaction receipt by polling eth_getTransactionReceipt directly
- * rather than relying on the provider's internal filter/subscription mechanism.
- * This is safe on all managed RPC nodes regardless of filter TTL.
- */
 async function waitForReceipt(
     tx: ethers.ContractTransactionResponse,
     context: string
@@ -276,10 +250,10 @@ export async function mintCreditsOnChain(
     logger.info({ txHash: receipt.hash, blockNumber: receipt.blockNumber, amount, projectId }, 'Mint transaction confirmed');
 
     return {
-        txHash:      receipt.hash,
+        txHash: receipt.hash,
         blockNumber: receipt.blockNumber,
-        gasUsed:     receipt.gasUsed.toString(),
-        amountWei:   amountWei.toString(),
+        gasUsed: receipt.gasUsed.toString(),
+        amountWei: amountWei.toString(),
     };
 }
 
@@ -339,13 +313,6 @@ export async function getProjectLifecycleStateOnChain(
     };
 }
 
-/**
- * Query all on-chain events for a project using eth_getLogs (stateless).
- *
- * queryFilter() uses eth_getLogs under the hood — it does NOT create a
- * server-side filter, so it is safe on all managed RPC providers regardless
- * of filter TTL settings.
- */
 export async function queryProjectEvents(projectId: string): Promise<OnChainEvent[]> {
     const contract = await getContract();
     const provider = getProvider();
@@ -380,11 +347,11 @@ export async function queryProjectEvents(projectId: string): Promise<OnChainEven
                 } catch { /* non-fatal */ }
 
                 allEvents.push({
-                    eventName:   name,
-                    txHash:      eventLog.transactionHash,
+                    eventName: name,
+                    txHash: eventLog.transactionHash,
                     blockNumber: eventLog.blockNumber,
                     timestamp,
-                    args:        parsedArgs,
+                    args: parsedArgs,
                 });
             }
         } catch (err) {
@@ -414,18 +381,18 @@ export async function blockchainHealthCheck(): Promise<{
     contractAddress: string;
     contractPaused: boolean;
 }> {
-    const wallet   = await connectWallet();
+    const wallet = await connectWallet();
     const contract = await getContract();
-    const network  = await getProvider().getNetwork();
+    const network = await getProvider().getNetwork();
     const paused: boolean = await contract.paused();
     const { address } = loadContractConfig();
 
     return {
-        connected:       true,
-        network:         network.name,
-        walletAddress:   await wallet.getAddress(),
+        connected: true,
+        network: network.name,
+        walletAddress: await wallet.getAddress(),
         contractAddress: address,
-        contractPaused:  paused,
+        contractPaused: paused,
     };
 }
 
