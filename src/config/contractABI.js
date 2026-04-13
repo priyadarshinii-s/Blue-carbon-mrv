@@ -10,7 +10,7 @@
  */
 
 export const CONTRACT_ADDRESS =
-  import.meta.env.VITE_CONTRACT_ADDRESS || '0xfBA277fA09538F492CB910bfe38189968b7e87a0';
+  import.meta.env.VITE_CONTRACT_ADDRESS || '0xe42a743635b3F92e0Cb5A60F1FF512E3843c7ba4';
 
 export const CHAIN_ID =
   Number(import.meta.env.VITE_CHAIN_ID) || 80002; // Polygon Amoy

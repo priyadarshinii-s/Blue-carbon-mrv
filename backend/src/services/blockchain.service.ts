@@ -68,7 +68,6 @@ function getProvider(): ethers.JsonRpcProvider {
         // Disable the automatic block poller — prevents eth_newFilter /
         // eth_getFilterChanges calls that expire on managed RPC nodes.
         // All our reads use eth_getLogs (queryFilter) which is stateless.
-        _provider.polling = false;
     }
     return _provider;
 }
